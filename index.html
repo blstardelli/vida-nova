@@ -51,7 +51,8 @@ svg text{font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
 
 <h2>Saldo calórico por dia</h2>
 <div class="chart" id="c-kcal"></div>
-<p class="note">Saldo = calorias consumidas − gasto de <span id="gastolbl"></span> kcal · <b style="color:var(--green)">verde, para baixo</b> = déficit (perda de gordura) · <b style="color:var(--red)">vermelho, para cima</b> = superávit (ganho) · toque na barra para ver as kcal do dia.</p>
+<div class="chart" id="c-acum"></div>
+<p class="note">Em cima: saldo de cada dia. Embaixo: <b>média acumulada</b> do saldo, do 1º dia do período até o dia (mesmos dias na vertical, mesma escala e mesma linha de zero). Saldo = calorias consumidas − gasto de <span id="gastolbl"></span> kcal · <b style="color:var(--green)">verde, para baixo</b> = déficit (perda de gordura) · <b style="color:var(--red)">vermelho, para cima</b> = superávit (ganho) · toque no dia para ver os detalhes.</p>
 
 <h2>Macronutrientes por dia</h2>
 <div class="chart" id="c-macros"></div>
@@ -124,6 +125,30 @@ function chartKcal(rows){
  S('line',{x1:m.l,x2:m.l+22,y1:14,y2:14,stroke:cv('--fg'),'stroke-width':1.8,'stroke-dasharray':'6 4'},svg);S('text',{x:m.l+28,y:18,'font-size':12,fill:cv('--fg')},svg,'0 = gasto calórico de '+nf(GASTO)+' kcal');
  const every=st>=34?1:2;
  rows.forEach((r,i)=>{if(i%every===0)S('text',{x:m.l+i*st+st/2,y:H-10,'text-anchor':'middle','font-size':11,fill:cv('--muted')},svg,r.label);});
+}
+function chartAcum(rows){
+ const el=$('c-acum');const W0=Math.max(280,el.clientWidth),H=Math.round(Math.max(210,Math.min(300,W0*.42)));
+ const m={t:30,r:14,b:30,l:52};const {svg,tip,W}=frame(el,H);
+ svg.setAttribute('aria-label','Linha com a média acumulada do saldo calórico, dia a dia');
+ const sal=rows.map((r)=>r.kcal-GASTO);let cs=0;const cum=sal.map((s,i)=>{cs+=s;return {tot:cs,avg:cs/(i+1)};});
+ const lo0=Math.min(0,...sal),hi0=Math.max(0,...sal);const span=Math.max(300,hi0-lo0);
+ const step0=niceMax(span/4);const lo=Math.floor((lo0-span*.14)/step0)*step0,hi=Math.ceil((hi0+span*.14)/step0)*step0;
+ const y=scaleLin(lo,hi,H-m.b,m.t);
+ for(let v=lo;v<=hi+1e-9;v+=step0){S('line',{x1:m.l,x2:W-m.r,y1:y(v),y2:y(v),stroke:cv('--grid')},svg);S('text',{x:m.l-8,y:y(v)+4,'text-anchor':'end','font-size':11,fill:cv('--muted')},svg,v>0?'+'+nf(v):nf(v));}
+ const n=rows.length,st=(W-m.l-m.r)/n;const X=(i)=>m.l+i*st+st/2;
+ rows.forEach((r,i)=>S('line',{x1:X(i),x2:X(i),y1:m.t-8,y2:H-m.b,stroke:cv('--grid'),'stroke-dasharray':'2 4'},svg));
+ S('line',{x1:m.l,x2:W-m.r,y1:y(0),y2:y(0),stroke:cv('--fg'),'stroke-width':1.8,'stroke-dasharray':'6 4'},svg);
+ if(n>1)S('path',{d:cum.map((c,i)=>(i?'L':'M')+X(i)+' '+y(c.avg)).join(''),fill:'none',stroke:cv('--fg'),'stroke-width':2.2,'stroke-linejoin':'round'},svg);
+ const every=st>=34?1:2;
+ rows.forEach((r,i)=>{const c=cum[i];const over=c.avg>0;const last=i===n-1;
+  S('circle',{cx:X(i),cy:y(c.avg),r:last?6:4.5,fill:over?cv('--red'):cv('--green'),stroke:cv('--bg'),'stroke-width':2},svg);
+  if(st>=34||i%2===(n-1)%2){S('text',{x:X(i),y:y(c.avg)+(over?-11:19),'text-anchor':'middle','font-size':11,'font-weight':last?800:700,fill:over?cv('--red'):cv('--green'),stroke:cv('--bg'),'stroke-width':4,'paint-order':'stroke','pointer-events':'none'},svg,sg(Math.round(c.avg)));}
+  if(i%every===0)S('text',{x:X(i),y:H-10,'text-anchor':'middle','font-size':11,fill:cv('--muted')},svg,r.label);
+  const hit=S('rect',{x:m.l+i*st,y:m.t-8,width:st,height:H-m.t-m.b+8,fill:'transparent'},svg);
+  hit.addEventListener('pointermove',(ev)=>{const b=el.getBoundingClientRect();showTip(el,tip,'11/11 → '.slice(0,0)+rows[0].label+' a '+r.label+' ('+(i+1)+(i?' dias':' dia')+')\nmédia do saldo: '+sg(Math.round(c.avg))+' kcal/dia\nsaldo acumulado: '+sg(Math.round(c.tot))+' kcal',ev.clientX-b.left,ev.clientY-b.top);});
+  hit.addEventListener('pointerleave',()=>{tip.style.display='none';});});
+ S('line',{x1:m.l,x2:m.l+22,y1:12,y2:12,stroke:cv('--fg'),'stroke-width':2.2},svg);S('circle',{cx:m.l+11,cy:12,r:4.5,fill:cv('--green'),stroke:cv('--bg'),'stroke-width':2},svg);
+ S('text',{x:m.l+28,y:16,'font-size':12,fill:cv('--fg')},svg,'média acumulada do saldo (kcal/dia)');
 }
 function chartMacros(rows){
  const el=$('c-macros');const W0=Math.max(280,el.clientWidth),H=Math.round(Math.max(270,Math.min(390,W0*.56)));
@@ -201,7 +226,7 @@ function render(){
  const dT=rows.reduce((a,r)=>a+(GASTO-r.kcal),0);const gk=dT/7700;
  $('frase').textContent='No período de '+rows[0].label+' a '+rows[rows.length-1].label+' ('+rows.length+(rows.length===1?' dia':' dias')+'), o '+(dT>=0?'déficit':'superávit')+' calórico total foi de '+nf(Math.abs(dT))+' kcal (≈ '+(Math.abs(gk).toFixed(2).replace('.',','))+' kg de gordura '+(dT>=0?'perdida':'ganha')+').';
  $('gastolbl').textContent=nf(GASTO);$('incl').textContent=sg(f.slope);
- chartDias(s);chartKcal(rows);chartMacros(rows);chartFF(rows);chartFaixas(f.out,rows.length);
+ chartDias(s);chartKcal(rows);chartAcum(rows);chartMacros(rows);chartFF(rows);chartFaixas(f.out,rows.length);
  const sum=(k)=>rows.reduce((a,r)=>a+r[k],0);const def=rows.reduce((a,r)=>a+(GASTO-r.kcal),0);const n=rows.length;
  kpis('k1',[['Faixa de pico',pico?pico.faixa:'—'],['Mediana no pico (kcal)',pico?nf(pico.mediana):'—'],['Média diária (kcal)',nf(sum('kcal')/n)],['FF médio do dia',(()=>{const o=rows.filter((r)=>r.ff!=null);return o.length?(o.reduce((a,r)=>a+r.ff,0)/o.length).toFixed(2).replace('.',','):'—';})()]]);
  kpis('k2',[['Déficit acumulado (kcal)',nf(def)],['Déficit médio (kcal/dia)',nf(def/n)],['Gordura equivalente (g)',nf(def/7.7)],['Proteína média (g/dia)',nf(sum('p')/n)],['Carboidrato médio (g/dia)',nf(sum('c')/n)],['Gordura média (g/dia)',nf(sum('g')/n)]]);
