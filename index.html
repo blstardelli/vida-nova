@@ -31,18 +31,23 @@ input[type=range]{display:block;width:100%;margin:6px 0 0}
 .kpi .v{font-family:Georgia,serif;font-size:27px;margin-top:4px;font-variant-numeric:tabular-nums}
 .tip{position:absolute;pointer-events:none;background:var(--panel);border:1px solid var(--line);box-shadow:0 4px 14px rgba(0,0,0,.18);color:var(--muted);font-size:12.5px;padding:6px 8px;border-radius:6px;white-space:pre-line;z-index:2;display:none}
 svg text{font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.filtros{position:sticky;top:8px;z-index:30;padding:10px 12px;box-shadow:0 6px 16px rgba(0,0,0,.12)}
+.filtros .presets{display:flex;flex-wrap:nowrap;gap:6px;margin:0}
+.filtros .presets button{white-space:nowrap;padding:5px 10px;font-size:12.5px}
+.filtros .sl{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.filtros label{margin-top:8px;font-size:13px}
 </style>
 </head>
 <body>
 <div class="wrap">
 <div class="top"><h1>Raio-X de Bruno</h1><button id="tema" type="button" aria-label="Mudar tema"></button></div>
 <p class="sub" id="frase">—</p>
-<section class="card">
+<section class="card filtros">
 <div class="presets" id="presets">
-<button data-p="3">Últimos 3 dias</button><button data-p="5">Últimos 5 dias</button><button data-p="7">Últimos 7 dias</button><button data-p="0">Todos os dias</button>
+<button data-p="3">3 dias</button><button data-p="5">5 dias</button><button data-p="7">7 dias</button><button data-p="0">Todos</button>
 </div>
-<label>Dia final: <b id="fimlbl">—</b><input type="range" id="fim"></label>
-<label>Janela: <b id="janlbl">—</b><input type="range" id="jan"></label>
+<div class="sl"><label>Dia final: <b id="fimlbl">—</b><input type="range" id="fim"></label>
+<label>Janela: <b id="janlbl">—</b><input type="range" id="jan"></label></div>
 </section>
 
 <h2>Dias dentro do filtro</h2>
