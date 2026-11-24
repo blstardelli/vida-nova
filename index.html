@@ -70,8 +70,9 @@ svg text{font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
 <p class="note">Tudo o que foi comido no dia somado como um único prato (peso, calorias, proteína, fibra e gordura) e aplicado à fórmula do FF · quanto maior, mais saciante (escala de 0 a 5, eixo ampliado para mostrar a variação) · tracejado = média do período · sem líquidos.</p>
 
 <h2 id="t-alim">O que consumi (kcal por alimento)</h2>
+<div class="presets" id="ordem" style="margin:4px 0 8px"><span style="align-self:center;font-size:13px;color:var(--muted)">Ordenar por:</span><button data-o="k" class="on">kcal</button><button data-o="f">FF</button></div>
 <div class="chart" id="c-alim"></div>
-<p class="note">Soma das kcal de cada alimento nos dias do filtro, do maior para o menor · kcal no fim de cada barra · FF do alimento (coluna da direita, verde mais forte = mais saciante; escala de 0,5 a 5) · "—" = líquido ou gordura, sem FF · inclui sucos, açaí, água de coco e azeite · valores estimados.</p>
+<p class="note">Soma das kcal de cada alimento nos dias do filtro, na ordem escolhida (kcal ou FF) · kcal no fim de cada barra · FF do alimento (coluna da direita, verde mais forte = mais saciante; escala de 0,5 a 5) · "—" = líquido ou gordura, sem FF · inclui sucos, açaí, água de coco e azeite · valores estimados.</p>
 
 <h2>Mediana do consumo de kcal por faixa de 3 horas</h2>
 <div class="chart" id="c-faixas"></div>
@@ -201,9 +202,10 @@ function chartFF(rows){
  ov.addEventListener('pointerleave',()=>{tip.style.display='none';});
 }
 const FFA={"Patinho moído": 3.12, "Arroz com lentilha": 2.56, "Strogonoff de frango": 2.81, "Pão francês": 1.88, "Whey + leite": 2.74, "Pão de forma integral": 2.24, "Goiaba": 3.01, "Ovos": 2.46, "Sonho de Valsa": 1.32, "Mussarela": 2.41, "Ouro Branco": 1.26, "Batata frita": 1.54, "Pepino": 4.5, "Ketchup": 2.31, "Tilápia": 3.32, "Broa de canjica": 1.55, "Arroz integral": 2.19, "Bife": 3.11, "Arroz com brócolis": 2.35, "Mandioca frita": 1.48, "Iogurte grego": 2.28, "Manteiga": 0.5, "Contrafilé": 3.01, "Presunto": 2.88, "Banana": 2.48, "Feijão fradinho": 2.67, "Tomate": 4.52, "Ricota": 2.47, "Folhas": 4.54, "Cenoura": 3.77};
+let ordAlim='k';
 function chartAlim(rows){
  const el=$('c-alim');const agg={};rows.forEach((r)=>(r.a||[]).forEach(([n,k])=>{agg[n]=(agg[n]||0)+k;}));
- const L=Object.entries(agg).sort((a,b)=>b[1]-a[1]);
+ const L=Object.entries(agg).sort((a,b)=>ordAlim==='f'?((FFA[b[0]]??-1)-(FFA[a[0]]??-1))||b[1]-a[1]:b[1]-a[1]);
  const W0=Math.max(280,el.clientWidth);const rh=28,top=26,fw=46;const m={t:top,r:fw+6,b:8,l:Math.min(150,Math.round(W0*.37))};const H=m.t+m.b+L.length*rh;
  const {svg,tip,W}=frame(el,H);svg.setAttribute('aria-label','Barras horizontais com as kcal e o FF de cada alimento consumido nos dias selecionados');
  const mx=Math.max(1,...L.map((x)=>x[1]));const bx=W-m.r-m.l-46;const sc=bx/mx;const tot=L.reduce((a,x)=>a+x[1],0);
@@ -272,6 +274,7 @@ DATA.forEach((d,i)=>{['de','ate'].forEach((id)=>{const o=document.createElement(
 function setRange(a,b){if(a>b){if(document.activeElement===$('ate'))a=b;else b=a;}st.fim=b;st.jan=b-a+1;st.p=-1;render();}
 $('de').addEventListener('change',()=>setRange(Number($('de').value),Number($('ate').value)));
 $('ate').addEventListener('change',()=>setRange(Number($('de').value),Number($('ate').value)));
+document.querySelectorAll('#ordem button').forEach((b)=>b.addEventListener('click',()=>{ordAlim=b.dataset.o;document.querySelectorAll('#ordem button').forEach((x)=>x.classList.toggle('on',x===b));render();}));
 $('fim').addEventListener('input',()=>{st.fim=Number($('fim').value);st.p=-1;render();});
 $('jan').addEventListener('input',()=>{st.jan=Number($('jan').value);st.p=-1;render();});
 document.querySelectorAll('#presets button').forEach((b)=>b.addEventListener('click',()=>{const p=Number(b.dataset.p);st.p=p;st.fim=DATA.length-1;st.jan=p||DATA.length;render();}));
