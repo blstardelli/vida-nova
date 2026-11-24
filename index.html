@@ -36,6 +36,7 @@ svg text{font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
 .filtros .presets button{white-space:nowrap;padding:5px 10px;font-size:12.5px}
 .filtros .sl{display:grid;grid-template-columns:1fr 1fr;gap:14px}
 .filtros label{margin-top:8px;font-size:13px}
+.dts select{width:100%;margin-top:4px;padding:6px 8px;font-size:14px;border-radius:8px;border:1px solid var(--grid);background:var(--card,var(--bg));color:var(--fg)}
 </style>
 </head>
 <body>
@@ -48,6 +49,7 @@ svg text{font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
 </div>
 <div class="sl"><label>Dia final: <b id="fimlbl">—</b><input type="range" id="fim"></label>
 <label>Janela: <b id="janlbl">—</b><input type="range" id="jan"></label></div>
+<div class="sl dts"><label>De: <select id="de"></select></label><label>Até: <select id="ate"></select></label></div>
 </section>
 
 <h2>Dias dentro do filtro</h2>
@@ -67,6 +69,10 @@ svg text{font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
 <div class="chart" id="c-ff"></div>
 <p class="note">Tudo o que foi comido no dia somado como um único prato (peso, calorias, proteína, fibra e gordura) e aplicado à fórmula do FF · quanto maior, mais saciante (escala de 0 a 5, eixo ampliado para mostrar a variação) · tracejado = média do período · sem líquidos.</p>
 
+<h2 id="t-alim">O que consumi (kcal por alimento)</h2>
+<div class="chart" id="c-alim"></div>
+<p class="note">Soma das kcal de cada alimento nos dias do filtro, do maior para o menor · kcal no fim de cada barra · FF do alimento (coluna da direita, verde mais forte = mais saciante; escala de 0,5 a 5) · "—" = líquido ou gordura, sem FF · inclui sucos, açaí, água de coco e azeite · valores estimados.</p>
+
 <h2>Mediana do consumo de kcal por faixa de 3 horas</h2>
 <div class="chart" id="c-faixas"></div>
 <p class="note">Faixas em horas (h) · mediana só entre os dias com consumo na faixa · ponto maior = mais dias com refeição · tracejado = tendência linear (<span id="incl">—</span> kcal por faixa).</p>
@@ -77,7 +83,7 @@ svg text{font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
 <p class="note">Gordura equivalente: 7.700 kcal ≈ 1 kg de gordura (estimativa). Refeições depois da meia-noite contam no dia anterior. Valores estimados a partir das porções informadas. Dados até 23/11/2026.</p>
 </div>
 <script>
-const DATA=[{"dia": "2026-11-11", "label": "11/11", "kcal": 2443, "p": 141, "c": 262, "g": 97, "f": 39, "ff": 2.47, "b": [0, 0, 694, 212, 372, 916, 0, 250]}, {"dia": "2026-11-12", "label": "12/11", "kcal": 2028, "p": 121, "c": 249, "g": 67, "f": 19, "ff": 2.46, "b": [0, 370, 548, 650, 240, 220, 0, 0]}, {"dia": "2026-11-13", "label": "13/11", "kcal": 2278, "p": 235, "c": 208, "g": 50, "f": 41, "ff": 2.8, "b": [0, 0, 518, 410, 530, 212, 608, 0]}, {"dia": "2026-11-14", "label": "14/11", "kcal": 3110, "p": 241, "c": 329, "g": 94, "f": 41, "ff": 2.55, "b": [490, 620, 20, 529, 481, 969, 0, 0]}, {"dia": "2026-11-15", "label": "15/11", "kcal": 2585, "p": 278, "c": 192, "g": 78, "f": 38, "ff": 2.65, "b": [0, 0, 410, 865, 559, 447, 305, 0]}, {"dia": "2026-11-16", "label": "16/11", "kcal": 2475, "p": 256, "c": 224, "g": 65, "f": 35, "ff": 2.7, "b": [0, 536, 20, 465, 675, 734, 45, 0]}, {"dia": "2026-11-17", "label": "17/11", "kcal": 2428, "p": 169, "c": 323, "g": 61, "f": 57, "ff": 2.61, "b": [0, 0, 494, 587, 0, 732, 615, 0]}, {"dia": "2026-11-18", "label": "18/11", "kcal": 3568, "p": 254, "c": 407, "g": 103, "f": 30, "ff": 2.47, "b": [0, 560, 128, 377, 595, 1337, 570, 0]}, {"dia": "2026-11-19", "label": "19/11", "kcal": 2323, "p": 194, "c": 203, "g": 80, "f": 26, "ff": 2.44, "b": [0, 0, 823, 525, 0, 780, 0, 195]}, {"dia": "2026-11-20", "label": "20/11", "kcal": 2823, "p": 279, "c": 255, "g": 77, "f": 49, "ff": 2.61, "b": [478, 705, 673, 0, 394, 573, 0, 0]}, {"dia": "2026-11-21", "label": "21/11", "kcal": 2481, "p": 201, "c": 265, "g": 70, "f": 35, "ff": 2.45, "b": [0, 0, 485, 522, 464, 516, 494, 0]}, {"dia": "2026-11-22", "label": "22/11", "kcal": 2123, "p": 121, "c": 288, "g": 63, "f": 43, "ff": 2.43, "b": [0, 0, 616, 180, 163, 893, 271, 0]}, {"dia": "2026-11-23", "label": "23/11", "kcal": 2581, "p": 206, "c": 258, "g": 87, "f": 47, "ff": 2.59, "b": [380, 771, 0, 212, 712, 311, 195, 0]}];
+const DATA=[{"dia": "2026-11-11", "label": "11/11", "kcal": 2443, "p": 141, "c": 262, "g": 97, "f": 39, "ff": 2.47, "a": [["Pão francês", 459], ["Arroz com lentilha", 421], ["Ovos", 316], ["Whey + leite", 216], ["Azeite", 205], ["Tilápia", 196], ["Goiaba", 139], ["Iogurte grego", 122], ["Manteiga", 110], ["Óleo da air fryer", 90], ["Banana", 66], ["Pão de forma integral", 64], ["Pepino", 38]], "b": [0, 0, 694, 212, 372, 916, 0, 250]}, {"dia": "2026-11-12", "label": "12/11", "kcal": 2028, "p": 121, "c": 249, "g": 67, "f": 19, "ff": 2.46, "a": [["Suco de laranja", 315], ["Broa de canjica", 289], ["Whey + leite", 242], ["Ovos", 232], ["Bife", 215], ["Mandioca frita", 149], ["Pão francês", 149], ["Pão de forma integral", 125], ["Mussarela", 120], ["Goiaba", 81], ["Feijão fradinho", 58], ["Pepino", 37], ["Folhas", 15]], "b": [0, 370, 548, 650, 240, 220, 0, 0]}, {"dia": "2026-11-13", "label": "13/11", "kcal": 2278, "p": 235, "c": 208, "g": 50, "f": 41, "ff": 2.8, "a": [["Patinho moído", 899], ["Arroz com lentilha", 706], ["Whey + leite", 212], ["Suco de laranja", 180], ["Tilápia", 104], ["Goiaba", 82], ["Azeite", 45], ["Pepino", 38], ["Cenoura", 12]], "b": [0, 0, 518, 410, 530, 212, 608, 0]}, {"dia": "2026-11-14", "label": "14/11", "kcal": 3110, "p": 241, "c": 329, "g": 94, "f": 41, "ff": 2.55, "a": [["Patinho moído", 746], ["Pão francês", 601], ["Mussarela", 301], ["Goiaba", 286], ["Whey + leite", 244], ["Ovos", 233], ["Suco de laranja", 202], ["Arroz com lentilha", 201], ["Ketchup", 85], ["Água de coco", 70], ["Expresso com chantilly", 55], ["Pepino", 38], ["Azeite", 27], ["Tomate", 22]], "b": [490, 620, 20, 529, 481, 969, 0, 0]}, {"dia": "2026-11-15", "label": "15/11", "kcal": 2585, "p": 278, "c": 192, "g": 78, "f": 38, "ff": 2.65, "a": [["Patinho moído", 1263], ["Arroz com lentilha", 438], ["Pão francês", 301], ["Ovos", 233], ["Goiaba", 157], ["Mussarela", 120], ["Pepino", 38], ["Ketchup", 35]], "b": [0, 0, 410, 865, 559, 447, 305, 0]}, {"dia": "2026-11-16", "label": "16/11", "kcal": 2475, "p": 256, "c": 224, "g": 65, "f": 35, "ff": 2.7, "a": [["Patinho moído", 676], ["Arroz com lentilha", 617], ["Strogonoff de frango", 471], ["Whey + leite", 211], ["Suco de laranja", 194], ["Pão francês", 149], ["Mussarela", 120], ["Pepino", 37]], "b": [0, 536, 20, 465, 675, 734, 45, 0]}, {"dia": "2026-11-17", "label": "17/11", "kcal": 2428, "p": 169, "c": 323, "g": 61, "f": 57, "ff": 2.61, "a": [["Strogonoff de frango", 735], ["Arroz com lentilha", 459], ["Goiaba", 339], ["Pão francês", 300], ["Mussarela", 240], ["Suco de laranja", 238], ["Ketchup", 58], ["Pepino", 37], ["Tomate", 22]], "b": [0, 0, 494, 587, 0, 732, 615, 0]}, {"dia": "2026-11-18", "label": "18/11", "kcal": 3568, "p": 254, "c": 407, "g": 103, "f": 30, "ff": 2.47, "a": [["Patinho moído", 726], ["Açaí", 590], ["Sonho de Valsa", 422], ["Strogonoff de frango", 339], ["Arroz com lentilha", 320], ["Pão de forma integral", 316], ["Arroz integral", 222], ["Whey + leite", 213], ["Suco de laranja", 180], ["Ouro Branco", 91], ["Pão francês", 75], ["Pepino", 38], ["Ketchup", 35]], "b": [0, 560, 128, 377, 595, 1337, 570, 0]}, {"dia": "2026-11-19", "label": "19/11", "kcal": 2323, "p": 194, "c": 203, "g": 80, "f": 26, "ff": 2.44, "a": [["Patinho moído", 702], ["Batata frita", 601], ["Arroz com lentilha", 331], ["Whey + leite", 212], ["Contrafilé", 110], ["Sonho de Valsa", 105], ["Ouro Branco", 90], ["Água de coco", 70], ["Pão de forma integral", 63], ["Pepino", 38]], "b": [0, 0, 823, 525, 0, 780, 0, 195]}, {"dia": "2026-11-20", "label": "20/11", "kcal": 2823, "p": 279, "c": 255, "g": 77, "f": 49, "ff": 2.61, "a": [["Patinho moído", 1134], ["Arroz com lentilha", 534], ["Goiaba", 254], ["Ovos", 251], ["Pão de forma integral", 204], ["Ouro Branco", 114], ["Sonho de Valsa", 113], ["Baly (energético)", 110], ["Suco de laranja", 68], ["Pepino", 40]], "b": [478, 705, 673, 0, 394, 573, 0, 0]}, {"dia": "2026-11-21", "label": "21/11", "kcal": 2481, "p": 201, "c": 265, "g": 70, "f": 35, "ff": 2.45, "a": [["Pão de forma integral", 520], ["Strogonoff de frango", 514], ["Arroz com lentilha", 389], ["Patinho moído", 329], ["Ouro Branco", 270], ["Whey + leite", 212], ["Sonho de Valsa", 105], ["Ketchup", 104], ["Pepino", 38]], "b": [0, 0, 485, 522, 464, 516, 494, 0]}, {"dia": "2026-11-22", "label": "22/11", "kcal": 2123, "p": 121, "c": 288, "g": 63, "f": 43, "ff": 2.43, "a": [["Strogonoff de frango", 506], ["Pão de forma integral", 455], ["Sonho de Valsa", 315], ["Arroz com lentilha", 271], ["Goiaba", 190], ["Ouro Branco", 180], ["Ketchup", 90], ["Azeite", 45], ["Pepino", 38], ["Ricota", 33]], "b": [0, 0, 616, 180, 163, 893, 271, 0]}, {"dia": "2026-11-23", "label": "23/11", "kcal": 2581, "p": 206, "c": 258, "g": 87, "f": 47, "ff": 2.59, "a": [["Strogonoff de frango", 804], ["Goiaba", 252], ["Arroz com lentilha", 250], ["Ovos", 215], ["Whey + leite", 212], ["Arroz com brócolis", 179], ["Pão francês", 150], ["Pão de forma integral", 130], ["Sonho de Valsa", 105], ["Presunto", 96], ["Ouro Branco", 90], ["Pepino", 63], ["Azeite", 35]], "b": [380, 771, 0, 212, 712, 311, 195, 0]}];
 const GASTO=2800;
 const LAB=['05–07h','08–10h','11–13h','14–16h','17–19h','20–22h','23–01h','02–04h'];
 const NS='http://www.w3.org/2000/svg';
@@ -98,12 +104,14 @@ function sel(){const N=DATA.length;const fim=Math.min(N-1,Math.max(0,st.fim));co
 function median(v){v=v.slice().sort((a,b)=>a-b);const n=v.length;return n?(n%2?v[(n-1)/2]:(v[n/2-1]+v[n/2])/2):null;}
 
 function chartDias(s){
- const el=$('c-dias');const H=96,m={t:6,r:4,b:20,l:4};const {svg,tip,W}=frame(el,H);
+ const el=$('c-dias');const H=146,m={t:46,r:4,b:20,l:4};const {svg,tip,W}=frame(el,H);
  svg.setAttribute('aria-label','Calorias totais por dia; barras coloridas estão no filtro');
  const N=DATA.length,step=(W-m.l-m.r)/N,bw=step*0.75;const mx=Math.max(...DATA.map((r)=>r.kcal));
  const y=scaleLin(0,mx,H-m.b,m.t);const every=step>=34?1:2;
  DATA.forEach((r,i)=>{const inn=i>=s.ini&&i<=s.fim;const x=m.l+i*step+(step-bw)/2;
   const rc=S('rect',{x,y:y(r.kcal),width:bw,height:H-m.b-y(r.kcal),rx:3,fill:inn?cv('--blue'):cv('--mutedbar'),opacity:inn?1:.55},svg);
+  {const cx=x+bw/2,ty=y(r.kcal)-4;const lb=S('text',{x:cx,y:ty,'text-anchor':'middle','font-size':11,'font-weight':inn?700:500,fill:inn?cv('--fg'):cv('--muted'),'pointer-events':'none'},svg,nf(r.kcal));
+   if(step<44){lb.setAttribute('transform','rotate(-90 '+cx+' '+ty+')');lb.setAttribute('text-anchor','start');lb.setAttribute('x',cx+4);}}
   rc.addEventListener('pointermove',(ev)=>{const b=el.getBoundingClientRect();showTip(el,tip,r.label+'\n'+nf(r.kcal)+' kcal'+(inn?'':' (fora do filtro)'),ev.clientX-b.left,ev.clientY-b.top);});
   rc.addEventListener('pointerleave',()=>{tip.style.display='none';});
   if(i%every===0)S('text',{x:x+bw/2,y:H-6,'text-anchor':'middle','font-size':11,fill:cv('--muted')},svg,r.label);});
@@ -192,6 +200,29 @@ function chartFF(rows){
  ov.addEventListener('pointermove',(ev)=>{const b=el.getBoundingClientRect();const px=ev.clientX-b.left;let bi=0;rows.forEach((r,i)=>{if(Math.abs(X(i)-px)<Math.abs(X(bi)-px))bi=i;});const r=rows[bi];if(r.ff==null)return;showTip(el,tip,r.label+'\nFF ponderado '+r.ff.toFixed(2).replace('.',','),X(bi),y(r.ff));});
  ov.addEventListener('pointerleave',()=>{tip.style.display='none';});
 }
+const FFA={"Patinho moído": 3.12, "Arroz com lentilha": 2.56, "Strogonoff de frango": 2.81, "Pão francês": 1.88, "Whey + leite": 2.74, "Pão de forma integral": 2.24, "Goiaba": 3.01, "Ovos": 2.46, "Sonho de Valsa": 1.32, "Mussarela": 2.41, "Ouro Branco": 1.26, "Batata frita": 1.54, "Pepino": 4.5, "Ketchup": 2.31, "Tilápia": 3.32, "Broa de canjica": 1.55, "Arroz integral": 2.19, "Bife": 3.11, "Arroz com brócolis": 2.35, "Mandioca frita": 1.48, "Iogurte grego": 2.28, "Manteiga": 0.5, "Contrafilé": 3.01, "Presunto": 2.88, "Banana": 2.48, "Feijão fradinho": 2.67, "Tomate": 4.52, "Ricota": 2.47, "Folhas": 4.54, "Cenoura": 3.77};
+function chartAlim(rows){
+ const el=$('c-alim');const agg={};rows.forEach((r)=>(r.a||[]).forEach(([n,k])=>{agg[n]=(agg[n]||0)+k;}));
+ const L=Object.entries(agg).sort((a,b)=>b[1]-a[1]);
+ const W0=Math.max(280,el.clientWidth);const rh=28,top=26,fw=46;const m={t:top,r:fw+6,b:8,l:Math.min(150,Math.round(W0*.37))};const H=m.t+m.b+L.length*rh;
+ const {svg,tip,W}=frame(el,H);svg.setAttribute('aria-label','Barras horizontais com as kcal e o FF de cada alimento consumido nos dias selecionados');
+ const mx=Math.max(1,...L.map((x)=>x[1]));const bx=W-m.r-m.l-46;const sc=bx/mx;const tot=L.reduce((a,x)=>a+x[1],0);
+ S('text',{x:m.l,y:14,'font-size':11,'font-weight':600,fill:cv('--muted')},svg,'kcal');
+ S('text',{x:W-fw/2-2,y:14,'text-anchor':'middle','font-size':11,'font-weight':600,fill:cv('--muted')},svg,'FF');
+ S('line',{x1:6,x2:W-6,y1:top-6,y2:top-6,stroke:cv('--grid')},svg);
+ L.forEach(([n,k],i)=>{const y=m.t+i*rh;const f=FFA[n];
+  if(i%2===1)S('rect',{x:0,y,width:W,height:rh,fill:cv('--grid'),opacity:.35},svg);
+  S('text',{x:m.l-8,y:y+rh/2+4,'text-anchor':'end','font-size':12,fill:cv('--fg')},svg,n.length>20?n.slice(0,19)+'…':n);
+  S('rect',{x:m.l,y:y+5,width:Math.max(2,k*sc),height:rh-10,rx:3,fill:cv('--blue')},svg);
+  S('text',{x:m.l+Math.max(2,k*sc)+5,y:y+rh/2+4,'font-size':11.5,'font-weight':700,fill:cv('--fg')},svg,nf(k));
+  const px=W-fw-2,pw=fw-2;
+  if(f!=null){const a=Math.max(.12,Math.min(.85,(f-1.2)/3));S('rect',{x:px,y:y+4,width:pw,height:rh-8,rx:(rh-8)/2,fill:cv('--green'),opacity:a},svg);
+   S('text',{x:px+pw/2,y:y+rh/2+4,'text-anchor':'middle','font-size':11.5,'font-weight':700,fill:cv('--fg')},svg,f.toFixed(2).replace('.',','));}
+  else S('text',{x:px+pw/2,y:y+rh/2+4,'text-anchor':'middle','font-size':11,fill:cv('--muted')},svg,'—');
+  const hit=S('rect',{x:0,y,width:W,height:rh,fill:'transparent'},svg);
+  hit.addEventListener('pointermove',(ev)=>{const b=el.getBoundingClientRect();showTip(el,tip,n+'\\n'+nf(k)+' kcal ('+Math.round(k/tot*100)+'% do total)\\nFF: '+(f!=null?f.toFixed(2).replace('.',','):'— (líquido)'),ev.clientX-b.left,ev.clientY-b.top);});
+  hit.addEventListener('pointerleave',()=>{tip.style.display='none';});});
+}
 function faixas(rows){
  const out=LAB.map((faixa,k)=>{const v=rows.map((r)=>r.b[k]).filter((x)=>x>0);return {faixa,idx:k,mediana:median(v),n:v.length,tend:null};});
  const pts=out.filter((r)=>r.n>0);let slope=0;
@@ -226,16 +257,21 @@ function render(){
  const s=sel();const rows=s.rows;const N=DATA.length;
  $('fim').min=0;$('fim').max=N-1;$('fim').value=s.fim;$('jan').min=1;$('jan').max=N;$('jan').value=rows.length;
  $('fimlbl').textContent=DATA[s.fim].label;$('janlbl').textContent=rows.length+(rows.length===1?' dia':' dias');
+ $('de').value=s.ini;$('ate').value=s.fim;
  document.querySelectorAll('#presets button').forEach((b)=>b.classList.toggle('on',Number(b.dataset.p)===st.p));
  const f=faixas(rows);const pico=f.out.filter((r)=>r.mediana!=null).reduce((a,r)=>(a==null||r.mediana>a.mediana?r:a),null);
  const dT=rows.reduce((a,r)=>a+(GASTO-r.kcal),0);const gk=dT/7700;
  $('frase').textContent='No período de '+rows[0].label+' a '+rows[rows.length-1].label+' ('+rows.length+(rows.length===1?' dia':' dias')+'), o '+(dT>=0?'déficit':'superávit')+' calórico total foi de '+nf(Math.abs(dT))+' kcal (≈ '+(Math.abs(gk).toFixed(2).replace('.',','))+' kg de gordura '+(dT>=0?'perdida':'ganha')+').';
  $('gastolbl').textContent=nf(GASTO);$('incl').textContent=sg(f.slope);
- chartDias(s);chartKcal(rows);chartAcum(rows);chartMacros(rows);chartFF(rows);chartFaixas(f.out,rows.length);
+ chartDias(s);chartKcal(rows);chartAcum(rows);chartMacros(rows);chartFF(rows);chartAlim(rows);chartFaixas(f.out,rows.length);
  const sum=(k)=>rows.reduce((a,r)=>a+r[k],0);const def=rows.reduce((a,r)=>a+(GASTO-r.kcal),0);const n=rows.length;
  kpis('k1',[['Faixa de pico',pico?pico.faixa:'—'],['Mediana no pico (kcal)',pico?nf(pico.mediana):'—'],['Média diária (kcal)',nf(sum('kcal')/n)],['FF médio do dia',(()=>{const o=rows.filter((r)=>r.ff!=null);return o.length?(o.reduce((a,r)=>a+r.ff,0)/o.length).toFixed(2).replace('.',','):'—';})()]]);
  kpis('k2',[['Déficit acumulado (kcal)',nf(def)],['Déficit médio (kcal/dia)',nf(def/n)],['Gordura equivalente (g)',nf(def/7.7)],['Proteína média (g/dia)',nf(sum('p')/n)],['Carboidrato médio (g/dia)',nf(sum('c')/n)],['Gordura média (g/dia)',nf(sum('g')/n)],['Fibra média (g/dia)',nf(sum('f')/n)]]);
 }
+DATA.forEach((d,i)=>{['de','ate'].forEach((id)=>{const o=document.createElement('option');o.value=i;o.textContent=d.label;$(id).appendChild(o);});});
+function setRange(a,b){if(a>b){if(document.activeElement===$('ate'))a=b;else b=a;}st.fim=b;st.jan=b-a+1;st.p=-1;render();}
+$('de').addEventListener('change',()=>setRange(Number($('de').value),Number($('ate').value)));
+$('ate').addEventListener('change',()=>setRange(Number($('de').value),Number($('ate').value)));
 $('fim').addEventListener('input',()=>{st.fim=Number($('fim').value);st.p=-1;render();});
 $('jan').addEventListener('input',()=>{st.jan=Number($('jan').value);st.p=-1;render();});
 document.querySelectorAll('#presets button').forEach((b)=>b.addEventListener('click',()=>{const p=Number(b.dataset.p);st.p=p;st.fim=DATA.length-1;st.jan=p||DATA.length;render();}));
