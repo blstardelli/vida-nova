@@ -5,10 +5,10 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Raio-X de Bruno</title>
 <style>
-:root{--bg:#fcfcfb;--panel:#fff;--fg:#0b0b0b;--muted:#52514e;--line:#e1e0db;--grid:#e6e5e1;--blue:#2a78d6;--red:#e34948;--orange:#eb6834;--green:#1baf7a;--mutedbar:#c9c8c3}
-@media(prefers-color-scheme:dark){:root:not([data-theme]){--bg:#121212;--panel:#1c1c1c;--fg:#f2f1ee;--muted:#a9a8a3;--line:#33322f;--grid:#2c2b29;--blue:#5aa0ee;--red:#ef6a69;--orange:#f08a5c;--green:#3cc795;--mutedbar:#45443f}}
-:root[data-theme=dark]{--bg:#121212;--panel:#1c1c1c;--fg:#f2f1ee;--muted:#a9a8a3;--line:#33322f;--grid:#2c2b29;--blue:#5aa0ee;--red:#ef6a69;--orange:#f08a5c;--green:#3cc795;--mutedbar:#45443f}
-:root[data-theme=light]{--bg:#fcfcfb;--panel:#fff;--fg:#0b0b0b;--muted:#52514e;--line:#e1e0db;--grid:#e6e5e1;--blue:#2a78d6;--red:#e34948;--orange:#eb6834;--green:#1baf7a;--mutedbar:#c9c8c3}
+:root{--bg:#fcfcfb;--panel:#fff;--fg:#0b0b0b;--muted:#52514e;--line:#e1e0db;--grid:#e6e5e1;--blue:#2a78d6;--red:#e34948;--orange:#eb6834;--green:#1baf7a;--mutedbar:#c9c8c3;--purple:#8a55cf}
+@media(prefers-color-scheme:dark){:root:not([data-theme]){--bg:#121212;--panel:#1c1c1c;--fg:#f2f1ee;--muted:#a9a8a3;--line:#33322f;--grid:#2c2b29;--blue:#5aa0ee;--red:#ef6a69;--orange:#f08a5c;--green:#3cc795;--mutedbar:#45443f;--purple:#b08af0}}
+:root[data-theme=dark]{--bg:#121212;--panel:#1c1c1c;--fg:#f2f1ee;--muted:#a9a8a3;--line:#33322f;--grid:#2c2b29;--blue:#5aa0ee;--red:#ef6a69;--orange:#f08a5c;--green:#3cc795;--mutedbar:#45443f;--purple:#b08af0}
+:root[data-theme=light]{--bg:#fcfcfb;--panel:#fff;--fg:#0b0b0b;--muted:#52514e;--line:#e1e0db;--grid:#e6e5e1;--blue:#2a78d6;--red:#e34948;--orange:#eb6834;--green:#1baf7a;--mutedbar:#c9c8c3;--purple:#8a55cf}
 .top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
 #tema{white-space:nowrap;margin-top:4px}
 *{box-sizing:border-box}
@@ -59,7 +59,7 @@ svg text{font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
 <div class="chart" id="c-acum"></div>
 <p class="note">Em cima: saldo de cada dia. Embaixo: <b>média acumulada</b> do saldo, do 1º dia do período até o dia (mesmos dias na vertical, mesma escala e mesma linha de zero). Saldo = calorias consumidas − gasto de <span id="gastolbl"></span> kcal · <b style="color:var(--green)">verde, para baixo</b> = déficit (perda de gordura) · <b style="color:var(--red)">vermelho, para cima</b> = superávit (ganho) · toque no dia para ver os detalhes.</p>
 
-<h2>Macronutrientes por dia</h2>
+<h2>Macronutrientes e fibra por dia</h2>
 <div class="chart" id="c-macros"></div>
 <p class="note">Gramas por dia · valores estimados a partir das porções informadas.</p>
 
@@ -74,10 +74,10 @@ svg text{font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
 <h2>Resumo do período</h2>
 <div class="kpis" id="k1"></div>
 <div class="kpis" id="k2"></div>
-<p class="note">Gordura equivalente: 7.700 kcal ≈ 1 kg de gordura (estimativa). Refeições depois da meia-noite contam no dia anterior. Valores estimados a partir das porções informadas. Dados até 22/11/2026.</p>
+<p class="note">Gordura equivalente: 7.700 kcal ≈ 1 kg de gordura (estimativa). Refeições depois da meia-noite contam no dia anterior. Valores estimados a partir das porções informadas. Dados até 23/11/2026.</p>
 </div>
 <script>
-const DATA=[{"dia": "2026-11-11", "label": "11/11", "kcal": 2405, "p": 139, "c": 253, "g": 97, "ff": 2.41, "b": [0, 0, 656, 212, 372, 916, 0, 250]}, {"dia": "2026-11-12", "label": "12/11", "kcal": 1990, "p": 119, "c": 240, "g": 67, "ff": 2.44, "b": [0, 370, 510, 650, 240, 220, 0, 0]}, {"dia": "2026-11-13", "label": "13/11", "kcal": 2240, "p": 233, "c": 199, "g": 50, "ff": 2.78, "b": [0, 0, 480, 410, 530, 212, 608, 0]}, {"dia": "2026-11-14", "label": "14/11", "kcal": 3090, "p": 240, "c": 324, "g": 94, "ff": 2.53, "b": [490, 620, 0, 529, 481, 969, 0, 0]}, {"dia": "2026-11-15", "label": "15/11", "kcal": 2565, "p": 277, "c": 187, "g": 78, "ff": 2.63, "b": [0, 0, 390, 865, 559, 447, 305, 0]}, {"dia": "2026-11-16", "label": "16/11", "kcal": 2455, "p": 255, "c": 219, "g": 65, "ff": 2.69, "b": [0, 536, 0, 465, 675, 734, 45, 0]}, {"dia": "2026-11-17", "label": "17/11", "kcal": 2390, "p": 167, "c": 314, "g": 61, "ff": 2.55, "b": [0, 0, 456, 587, 0, 732, 615, 0]}, {"dia": "2026-11-18", "label": "18/11", "kcal": 3530, "p": 252, "c": 398, "g": 103, "ff": 2.46, "b": [0, 560, 90, 377, 595, 1337, 570, 0]}, {"dia": "2026-11-19", "label": "19/11", "kcal": 2285, "p": 192, "c": 194, "g": 80, "ff": 2.45, "b": [0, 0, 785, 525, 0, 780, 0, 195]}, {"dia": "2026-11-20", "label": "20/11", "kcal": 2785, "p": 277, "c": 246, "g": 77, "ff": 2.58, "b": [478, 705, 635, 0, 394, 573, 0, 0]}, {"dia": "2026-11-21", "label": "21/11", "kcal": 2443, "p": 199, "c": 256, "g": 70, "ff": 2.43, "b": [0, 0, 447, 522, 464, 516, 494, 0]}, {"dia": "2026-11-22", "label": "22/11", "kcal": 2085, "p": 119, "c": 279, "g": 63, "ff": 2.36, "b": [0, 0, 578, 180, 163, 893, 271, 0]}];
+const DATA=[{"dia": "2026-11-11", "label": "11/11", "kcal": 2443, "p": 141, "c": 262, "g": 97, "f": 39, "ff": 2.47, "b": [0, 0, 694, 212, 372, 916, 0, 250]}, {"dia": "2026-11-12", "label": "12/11", "kcal": 2028, "p": 121, "c": 249, "g": 67, "f": 19, "ff": 2.46, "b": [0, 370, 548, 650, 240, 220, 0, 0]}, {"dia": "2026-11-13", "label": "13/11", "kcal": 2278, "p": 235, "c": 208, "g": 50, "f": 41, "ff": 2.8, "b": [0, 0, 518, 410, 530, 212, 608, 0]}, {"dia": "2026-11-14", "label": "14/11", "kcal": 3110, "p": 241, "c": 329, "g": 94, "f": 41, "ff": 2.55, "b": [490, 620, 20, 529, 481, 969, 0, 0]}, {"dia": "2026-11-15", "label": "15/11", "kcal": 2585, "p": 278, "c": 192, "g": 78, "f": 38, "ff": 2.65, "b": [0, 0, 410, 865, 559, 447, 305, 0]}, {"dia": "2026-11-16", "label": "16/11", "kcal": 2475, "p": 256, "c": 224, "g": 65, "f": 35, "ff": 2.7, "b": [0, 536, 20, 465, 675, 734, 45, 0]}, {"dia": "2026-11-17", "label": "17/11", "kcal": 2428, "p": 169, "c": 323, "g": 61, "f": 57, "ff": 2.61, "b": [0, 0, 494, 587, 0, 732, 615, 0]}, {"dia": "2026-11-18", "label": "18/11", "kcal": 3568, "p": 254, "c": 407, "g": 103, "f": 30, "ff": 2.47, "b": [0, 560, 128, 377, 595, 1337, 570, 0]}, {"dia": "2026-11-19", "label": "19/11", "kcal": 2323, "p": 194, "c": 203, "g": 80, "f": 26, "ff": 2.44, "b": [0, 0, 823, 525, 0, 780, 0, 195]}, {"dia": "2026-11-20", "label": "20/11", "kcal": 2823, "p": 279, "c": 255, "g": 77, "f": 49, "ff": 2.61, "b": [478, 705, 673, 0, 394, 573, 0, 0]}, {"dia": "2026-11-21", "label": "21/11", "kcal": 2481, "p": 201, "c": 265, "g": 70, "f": 35, "ff": 2.45, "b": [0, 0, 485, 522, 464, 516, 494, 0]}, {"dia": "2026-11-22", "label": "22/11", "kcal": 2123, "p": 121, "c": 288, "g": 63, "f": 43, "ff": 2.43, "b": [0, 0, 616, 180, 163, 893, 271, 0]}, {"dia": "2026-11-23", "label": "23/11", "kcal": 2581, "p": 206, "c": 258, "g": 87, "f": 47, "ff": 2.59, "b": [380, 771, 0, 212, 712, 311, 195, 0]}];
 const GASTO=2800;
 const LAB=['05–07h','08–10h','11–13h','14–16h','17–19h','20–22h','23–01h','02–04h'];
 const NS='http://www.w3.org/2000/svg';
@@ -157,16 +157,16 @@ function chartAcum(rows){
 }
 function chartMacros(rows){
  const el=$('c-macros');const W0=Math.max(280,el.clientWidth),H=Math.round(Math.max(270,Math.min(390,W0*.56)));
- const m={t:40,r:30,b:30,l:44};const {svg,tip,W}=frame(el,H);
- svg.setAttribute('aria-label','Linhas com proteína, carboidrato e gordura por dia');
- const ser=[['Proteína','p',cv('--blue')],['Carboidrato','c',cv('--orange')],['Gordura','g',cv('--green')]];
- const mx=Math.max(...rows.map((r)=>Math.max(r.p,r.c,r.g)))*1.1;const T=ticks(mx);const y=scaleLin(0,T.max,H-m.b,m.t);grid(svg,m,W,H,y,T.t);
+ const m={t:40,r:36,b:30,l:44};const {svg,tip,W}=frame(el,H);
+ svg.setAttribute('aria-label','Linhas com proteína, carboidrato, gordura e fibra por dia');
+ const ser=[['Proteína','p',cv('--blue')],['Carboidrato','c',cv('--orange')],['Gordura','g',cv('--green')],['Fibra','f',cv('--purple')]];
+ const mx=Math.max(...rows.map((r)=>Math.max(r.p,r.c,r.g,r.f)))*1.1;const T=ticks(mx);const y=scaleLin(0,T.max,H-m.b,m.t);grid(svg,m,W,H,y,T.t);
  const n=rows.length,step=(W-m.l-m.r)/n;const X=(i)=>m.l+i*step+step/2;const every=step>=34?1:2;
  rows.forEach((r,i)=>{if(i%every===0)S('text',{x:X(i),y:H-8,'text-anchor':'middle','font-size':11,fill:cv('--muted')},svg,r.label);});
- ser.forEach(([nome,k,col],j)=>{const gx=m.l+j*118;S('circle',{cx:gx+5,cy:16,r:5,fill:col},svg);S('text',{x:gx+16,y:20,'font-size':12,fill:cv('--fg')},svg,nome);
+ ser.forEach(([nome,k,col],j)=>{const gx=m.l+[0,78,188,262][j];S('circle',{cx:gx+5,cy:16,r:5,fill:col},svg);S('text',{x:gx+16,y:20,'font-size':12,fill:cv('--fg')},svg,nome);
   if(n>1)S('path',{d:rows.map((r,i)=>(i?'L':'M')+X(i)+' '+y(r[k])).join(''),fill:'none',stroke:col,'stroke-width':2.2},svg);
   rows.forEach((r,i)=>{S('circle',{cx:X(i),cy:y(r[k]),r:4.5,fill:col,stroke:cv('--bg'),'stroke-width':2},svg);
-   if(n<=6||i===n-1){const up=j===0?r.p>=r.c:j===1?r.c>r.p:true;S('text',{x:X(i),y:y(r[k])+(up?-9:16),'text-anchor':'middle','font-size':11,fill:cv('--muted'),stroke:cv('--bg'),'stroke-width':3,'paint-order':'stroke'},svg,nf(r[k]));}});});
+   if(n<=6||i===n-1){const up=j===0?r.p>=r.c:j===1?r.c>r.p:j===3?false:true;S('text',{x:X(i)+(i===n-1?9:0),y:y(r[k])+(i===n-1?[4,3,3,13][j]:(up?-9:16)),'text-anchor':(i===n-1?'start':'middle'),'font-size':11,fill:cv('--muted'),stroke:cv('--bg'),'stroke-width':3,'paint-order':'stroke'},svg,nf(r[k]));}});});
  const ov=S('rect',{x:0,y:m.t-6,width:W,height:H-m.t+6,fill:'transparent'},svg);
  ov.addEventListener('pointermove',(ev)=>{const b=el.getBoundingClientRect();const px=ev.clientX-b.left;let bi=0;rows.forEach((r,i)=>{if(Math.abs(X(i)-px)<Math.abs(X(bi)-px))bi=i;});const r=rows[bi];showTip(el,tip,r.label+'\nProteína '+nf(r.p)+' g\nCarboidrato '+nf(r.c)+' g\nGordura '+nf(r.g)+' g',X(bi),y(Math.max(r.p,r.c,r.g)));});
  ov.addEventListener('pointerleave',()=>{tip.style.display='none';});
@@ -234,7 +234,7 @@ function render(){
  chartDias(s);chartKcal(rows);chartAcum(rows);chartMacros(rows);chartFF(rows);chartFaixas(f.out,rows.length);
  const sum=(k)=>rows.reduce((a,r)=>a+r[k],0);const def=rows.reduce((a,r)=>a+(GASTO-r.kcal),0);const n=rows.length;
  kpis('k1',[['Faixa de pico',pico?pico.faixa:'—'],['Mediana no pico (kcal)',pico?nf(pico.mediana):'—'],['Média diária (kcal)',nf(sum('kcal')/n)],['FF médio do dia',(()=>{const o=rows.filter((r)=>r.ff!=null);return o.length?(o.reduce((a,r)=>a+r.ff,0)/o.length).toFixed(2).replace('.',','):'—';})()]]);
- kpis('k2',[['Déficit acumulado (kcal)',nf(def)],['Déficit médio (kcal/dia)',nf(def/n)],['Gordura equivalente (g)',nf(def/7.7)],['Proteína média (g/dia)',nf(sum('p')/n)],['Carboidrato médio (g/dia)',nf(sum('c')/n)],['Gordura média (g/dia)',nf(sum('g')/n)]]);
+ kpis('k2',[['Déficit acumulado (kcal)',nf(def)],['Déficit médio (kcal/dia)',nf(def/n)],['Gordura equivalente (g)',nf(def/7.7)],['Proteína média (g/dia)',nf(sum('p')/n)],['Carboidrato médio (g/dia)',nf(sum('c')/n)],['Gordura média (g/dia)',nf(sum('g')/n)],['Fibra média (g/dia)',nf(sum('f')/n)]]);
 }
 $('fim').addEventListener('input',()=>{st.fim=Number($('fim').value);st.p=-1;render();});
 $('jan').addEventListener('input',()=>{st.jan=Number($('jan').value);st.p=-1;render();});
