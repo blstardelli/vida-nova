@@ -67,7 +67,7 @@ input.w:focus{outline:2px solid var(--accent);outline-offset:1px}
     <svg id="chart" viewBox="0 0 700 260" role="img" aria-label="Gráfico da meta e do peso real"></svg>
     <div class="legend"><span><i style="background:var(--muted)"></i>Meta</span><span><i style="background:var(--accent)"></i>Peso real</span></div>
   </section>
-  <div class="bar"><button id="bExp" type="button">Exportar backup</button><label class="btn" for="fImp">Importar backup</label><input id="fImp" type="file" accept="application/json,.json" hidden></div>
+  <div class="bar"><button id="bLogin" type="button">Entrar com Google</button><button id="bExp" type="button">Exportar backup</button><label class="btn" for="fImp">Importar backup</label><input id="fImp" type="file" accept="application/json,.json" hidden></div>
   <div class="st" id="status" aria-live="polite"></div>
   <div class="tw">
     <table>
@@ -76,7 +76,11 @@ input.w:focus{outline:2px solid var(--accent);outline-offset:1px}
     </table>
   </div>
 </main>
-<script>
+<script type="module">
+import {initializeApp} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+import {getAuth,GoogleAuthProvider,signInWithPopup,signOut,onAuthStateChanged} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+import {initializeFirestore,persistentLocalCache,collection,doc,setDoc,deleteDoc,onSnapshot} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+const firebaseConfig={apiKey:"AIzaSyDB_4ScfW9FTB6wS1shu9oVENRalm0uapE",authDomain:"vida-nova-7dd76.firebaseapp.com",projectId:"vida-nova-7dd76",storageBucket:"vida-nova-7dd76.firebasestorage.app",messagingSenderId:"929328584944",appId:"1:929328584944:web:29a6858db243a1f282ca35"};
 const START=Date.UTC(2026,10,9), START_W=101.6, STEP=0.1, GOAL=80, N=217, DAY=86400000;
 const fmt=(n,d=1)=>n.toLocaleString('pt-BR',{minimumFractionDigits:d,maximumFractionDigits:d});
 const plan=i=>Math.round((START_W-STEP*i)*10)/10;
@@ -121,7 +125,8 @@ async function save(i,f,v){
   render();
   try{
     localStorage.setItem('registros',JSON.stringify(recs));
-    status.textContent='Salvo.';
+    if(uid){const ref=doc(db,'users',uid,'dias','d'+i); if(!empty) await setDoc(ref,Object.assign({idx:i,date:dstr(i)},r)); else await deleteDoc(ref); status.textContent='Salvo na nuvem.'}
+    else status.textContent='Salvo só neste aparelho. Entre com o Google para sincronizar.';
   }catch(e){status.textContent='Não consegui salvar. Tente de novo.'}
 }
 function render(){
@@ -169,9 +174,35 @@ function chart(keys){
 }
 function apply(list){recs={};list.forEach(r=>{if(r&&typeof r.idx==='number'){const o={};F.forEach(f=>{if(typeof r[f.k]==='number')o[f.k]=r[f.k]});if(Object.keys(o).length)recs[r.idx]=o}});render()}
 render();
-try{const raw=localStorage.getItem('registros');if(raw){recs=JSON.parse(raw)||{}}}catch(e){}
+let app,auth,db,uid=null,unsub=null;
+const loginBtn=document.getElementById('bLogin');
+try{const raw=localStorage.getItem('registros');if(raw)recs=JSON.parse(raw)||{}}catch(e){}
 render();
-status.textContent='Os registros ficam salvos neste navegador. Use Exportar para fazer backup.';
+try{
+  app=initializeApp(firebaseConfig);auth=getAuth(app);
+  db=initializeFirestore(app,{localCache:persistentLocalCache()});
+}catch(e){status.textContent='Não consegui conectar ao Firebase.'}
+function pushLocalMissing(cloud){
+  // envia para a nuvem dias que só existem no aparelho
+  Object.keys(recs).forEach(k=>{if(!cloud[k])setDoc(doc(db,'users',uid,'dias','d'+k),Object.assign({idx:+k,date:dstr(+k)},recs[k])).catch(()=>{})});
+}
+if(auth)onAuthStateChanged(auth,u=>{
+  if(unsub){unsub();unsub=null}
+  if(!u){uid=null;loginBtn.textContent='Entrar com Google';status.textContent='Entre com o Google para sincronizar entre aparelhos.';return}
+  uid=u.uid;loginBtn.textContent='Sair ('+(u.email||'conta')+')';status.textContent='Carregando…';
+  let first=true;
+  unsub=onSnapshot(collection(db,'users',uid,'dias'),snap=>{
+    const cloud={};snap.forEach(d=>{const r=d.data();if(r&&typeof r.idx==='number'){const o={};F.forEach(f=>{if(typeof r[f.k]==='number')o[f.k]=r[f.k]});if(Object.keys(o).length)cloud[r.idx]=o}});
+    if(first){first=false;pushLocalMissing(cloud);Object.keys(recs).forEach(k=>{if(!cloud[k])cloud[k]=recs[k]})}
+    recs=cloud;try{localStorage.setItem('registros',JSON.stringify(recs))}catch(e){}
+    render();status.textContent='Sincronizado.';
+  },err=>{status.textContent='Sem permissão ou sem conexão com o banco. Confira as regras do Firestore.'});
+});
+loginBtn.addEventListener('click',async()=>{
+  if(!auth)return;
+  try{if(uid)await signOut(auth);else await signInWithPopup(auth,new GoogleAuthProvider())}
+  catch(e){status.textContent='Não consegui entrar. Permita pop-ups e tente de novo.'}
+});
 function exportar(){
   const blob=new Blob([JSON.stringify(recs,null,2)],{type:'application/json'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='peso-backup-'+new Date().toISOString().slice(0,10)+'.json';
@@ -179,7 +210,7 @@ function exportar(){
 }
 function importar(file){
   if(!file)return;const r=new FileReader();
-  r.onload=()=>{try{const o=JSON.parse(r.result);if(typeof o!=='object'||o===null)throw 0;recs=o;localStorage.setItem('registros',JSON.stringify(recs));render();status.textContent='Backup importado.'}catch(e){status.textContent='Arquivo de backup inválido.'}};
+  r.onload=()=>{try{const o=JSON.parse(r.result);if(typeof o!=='object'||o===null)throw 0;recs=o;localStorage.setItem('registros',JSON.stringify(recs));render();if(uid)Object.keys(recs).forEach(k=>setDoc(doc(db,'users',uid,'dias','d'+k),Object.assign({idx:+k,date:dstr(+k)},recs[k])).catch(()=>{}));status.textContent='Backup importado.'}catch(e){status.textContent='Arquivo de backup inválido.'}};
   r.readAsText(file);
 }
 document.getElementById('bExp').addEventListener('click',exportar);
