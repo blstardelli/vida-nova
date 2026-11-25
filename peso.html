@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Peso na balança</title>
+<style>
+/* Layout: resumo no topo, gráfico, depois tabela diária com coluna editável de peso real. */
+:root{
+  --bg:#f4f6f5; --card:#ffffff; --ink:#18231f; --muted:#5f6e68; --line:#dfe5e2;
+  --accent:#0f766e; --accent-soft:#d5ece8; --good:#15803d; --bad:#b45309; --today:#fff4cf;
+  --font-d:'Fraunces',Georgia,serif; --font-b:'IBM Plex Sans',system-ui,sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0f1715; --card:#17211e; --ink:#e8efec; --muted:#97a8a1; --line:#27342f;
+  --accent:#4fd1c0; --accent-soft:#1b3a35; --good:#4ade80; --bad:#fbbf24; --today:#3a3414; color-scheme:dark;}}
+:root[data-theme="dark"]{
+  --bg:#0f1715; --card:#17211e; --ink:#e8efec; --muted:#97a8a1; --line:#27342f;
+  --accent:#4fd1c0; --accent-soft:#1b3a35; --good:#4ade80; --bad:#fbbf24; --today:#3a3414; color-scheme:dark;}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--font-b);font-size:15px;line-height:1.4}
+main{max-width:960px;margin:0 auto;padding:20px 16px 48px;display:flex;flex-direction:column;gap:16px}
+h1{font-family:var(--font-d);font-size:28px;margin:0;text-wrap:balance}
+.sub{color:var(--muted);margin:2px 0 0}
+.tiles{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+@media(min-width:620px){.tiles{grid-template-columns:repeat(4,1fr)}}
+.tile{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px}
+.tile .l{color:var(--muted);font-size:12px}
+.tile .v{font-family:var(--font-d);font-size:26px;font-variant-numeric:tabular-nums;margin-top:2px}
+.tile .n{font-size:12px;color:var(--muted)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px}
+.card h2{font-size:14px;margin:0 0 8px;color:var(--muted);font-weight:600}
+.legend{display:flex;gap:14px;font-size:12px;color:var(--muted);margin-top:6px;flex-wrap:wrap}
+.legend i{display:inline-block;width:14px;height:3px;vertical-align:middle;margin-right:5px;border-radius:2px}
+svg{width:100%;height:auto;display:block}
+.tw{max-height:560px;overflow:auto;border:1px solid var(--line);border-radius:10px;background:var(--card)}
+table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums}
+th,td{padding:8px 10px;text-align:right;border-bottom:1px solid var(--line);white-space:nowrap}
+th{white-space:normal;min-width:72px;position:sticky;top:0;background:var(--accent-soft);font-size:12px;color:var(--ink);z-index:1}
+th:first-child,td:first-child{text-align:left}
+tr.today td{background:var(--today)}
+tr.today td:first-child{font-weight:700}
+td.date{text-align:left}
+input.w{width:76px;font:inherit;text-align:right;padding:5px 7px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink)}
+input.w:focus{outline:2px solid var(--accent);outline-offset:1px}
+.ok{color:var(--good)} .no{color:var(--bad)}
+.bar{display:flex;gap:8px;flex-wrap:wrap}.bar button,.btn{font:inherit;padding:7px 12px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink);cursor:pointer}.bar button:focus-visible,.btn:focus-within{outline:2px solid var(--accent)}
+.tau{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:13px;color:var(--muted)}
+.st{font-size:12px;color:var(--muted);min-height:16px}
+</style>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600&family=IBM+Plex+Sans:wght@400;600&display=swap">
+</head>
+<body>
+<main>
+  <header>
+    <h1>Peso na balança</h1>
+    <p class="sub">De 101,6 kg a 80 kg desde 09/11/2026, com queda mais rápida no início e mais lenta depois (curva exponencial, como no modelo de Hall et al., 2011). Meta prevista: <b id="goalDate">13/06/2027</b>.</p>
+  </header>
+  <section class="tiles" aria-label="Resumo">
+    <div class="tile"><div class="l">Meta de hoje</div><div class="v" id="tTarget">–</div><div class="n" id="tTargetN"></div></div>
+    <div class="tile"><div class="l">Último peso</div><div class="v" id="tLast">–</div><div class="n" id="tLastN">sem registro</div></div>
+    <div class="tile"><div class="l">Diferença p/ meta</div><div class="v" id="tDiff">–</div><div class="n" id="tDiffN"></div></div>
+    <div class="tile"><div class="l">Faltam</div><div class="v" id="tLeft">–</div><div class="n" id="tLeftN"></div></div>
+  </section>
+  <section class="card">
+    <h2>Meta e peso real</h2>
+    <svg id="chart" viewBox="0 0 700 260" role="img" aria-label="Gráfico da meta e do peso real"></svg>
+    <div class="legend"><span><i style="background:var(--muted)"></i>Meta</span><span><i style="background:var(--accent)"></i>Peso real</span></div>
+  </section>
+  <div class="tau"><label for="tau">Curvatura τ (dias)</label><input id="tau" class="w" type="text" inputmode="numeric"><span id="rateInfo" class="st"></span></div>
+  <div class="bar"><button id="bLogin" type="button">Entrar com Google</button><button id="bExp" type="button">Exportar backup</button><label class="btn" for="fImp">Importar backup</label><input id="fImp" type="file" accept="application/json,.json" hidden></div>
+  <div class="st" id="status" aria-live="polite"></div>
+  <div class="tw">
+    <table>
+      <thead><tr><th>Dia</th><th>Data</th><th>Meta (kg)</th><th>Peso real (kg)</th><th>Diferença</th><th>% Gordura</th><th>% Massa muscular</th><th>Idade corporal</th><th>TMB (kcal)</th><th>Gordura visceral</th></tr></thead>
+      <tbody id="rows"></tbody>
+    </table>
+  </div>
+</main>
+<script type="module">
+import {initializeApp} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+import {getAuth,GoogleAuthProvider,signInWithPopup,signOut,onAuthStateChanged} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+import {initializeFirestore,persistentLocalCache,collection,doc,setDoc,deleteDoc,onSnapshot} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+const firebaseConfig={apiKey:"AIzaSyDB_4ScfW9FTB6wS1shu9oVENRalm0uapE",authDomain:"vida-nova-7dd76.firebaseapp.com",projectId:"vida-nova-7dd76",storageBucket:"vida-nova-7dd76.firebasestorage.app",messagingSenderId:"929328584944",appId:"1:929328584944:web:29a6858db243a1f282ca35"};
+const START=Date.UTC(2026,10,9), START_W=101.6, STEP=0.1, GOAL=80, N=217, DAY=86400000;
+const fmt=(n,d=1)=>n.toLocaleString('pt-BR',{minimumFractionDigits:d,maximumFractionDigits:d});
+let tau=200, pinf=0, e0=0;
+function setTau(t){tau=Math.min(2000,Math.max(30,t));e0=Math.exp(-(N-1)/tau);pinf=(GOAL-START_W*e0)/(1-e0);}
+try{const t=parseFloat(localStorage.getItem('tau'));if(t>=30)tau=t}catch(e){}
+setTau(tau);
+const plan=i=>Math.round((pinf+(START_W-pinf)*Math.exp(-i/tau))*10)/10;
+const rateAt=i=>(START_W-pinf)/tau*Math.exp(-i/tau)*1000;
+const dstr=i=>new Date(START+i*DAY).toISOString().slice(0,10);
+const dbr=i=>{const d=new Date(START+i*DAY);return String(d.getUTCDate()).padStart(2,'0')+'/'+String(d.getUTCMonth()+1).padStart(2,'0')+'/'+d.getUTCFullYear()};
+function todayIdx(){const n=new Date();return Math.round((Date.UTC(n.getFullYear(),n.getMonth(),n.getDate())-START)/DAY)}
+const T=todayIdx();
+let weights={}, recs={}; // recs: dia (índice) -> medidas
+let store=null, usingDb=false;
+const status=document.getElementById('status');
+
+const tbody=document.getElementById('rows');
+const F=[ // campo, casas decimais, mínimo, máximo, rótulo
+  {k:'kg',d:1,min:20,max:400,l:'peso'},
+  {k:'gord',d:1,min:1,max:80,l:'% gordura'},
+  {k:'musc',d:1,min:1,max:90,l:'% massa muscular'},
+  {k:'idade',d:0,min:5,max:120,l:'idade corporal'},
+  {k:'tmb',d:0,min:300,max:6000,l:'TMB'},
+  {k:'visc',d:1,min:1,max:60,l:'gordura visceral'}];
+const inputs=[], diffs=[], metaCells=[];
+function mkInput(i,f){
+  const td=document.createElement('td'),inp=document.createElement('input');
+  inp.className='w';inp.type='text';inp.inputMode='decimal';inp.id=f.k+i;inp.placeholder='–';
+  inp.setAttribute('aria-label',f.l+' do dia '+dbr(i));
+  inp.addEventListener('change',()=>save(i,f,inp.value));
+  td.appendChild(inp);inputs[i]=inputs[i]||{};inputs[i][f.k]=inp;return td;
+}
+for(let i=0;i<N;i++){
+  const tr=document.createElement('tr'); if(i===T)tr.className='today'; tr.id='r'+i;
+  [i,dbr(i),fmt(plan(i))].forEach((t,k)=>{const td=document.createElement('td');td.textContent=t;if(k===1)td.className='date';tr.appendChild(td)});
+  tr.appendChild(mkInput(i,F[0]));
+  const tdD=document.createElement('td');tr.appendChild(tdD);diffs.push(tdD);
+  F.slice(1).forEach(f=>tr.appendChild(mkInput(i,f)));
+  metaCells[i]=tr.children[2];
+  tbody.appendChild(tr);
+}
+function parse(v,f){const n=parseFloat(String(v).replace(',','.'));if(!isFinite(n)||n<f.min||n>f.max)return null;const m=Math.pow(10,f.d);return Math.round(n*m)/m}
+async function save(i,f,v){
+  const r=recs[i]=recs[i]||{};
+  if(String(v).trim()===''){delete r[f.k]}
+  else{const n=parse(v,f);if(n===null){status.textContent='Valor inválido em '+f.l+': use um número entre '+f.min+' e '+f.max+'.';return}r[f.k]=n}
+  const empty=Object.keys(r).length===0; if(empty)delete recs[i];
+  render();
+  try{
+    localStorage.setItem('registros',JSON.stringify(recs));
+    if(uid){const ref=doc(db,'users',uid,'dias','d'+i); if(!empty) await setDoc(ref,Object.assign({idx:i,date:dstr(i)},r)); else await deleteDoc(ref); status.textContent='Salvo na nuvem.'}
+    else status.textContent='Salvo só neste aparelho. Entre com o Google para sincronizar.';
+  }catch(e){status.textContent='Não consegui salvar. Tente de novo.'}
+}
+function render(){
+  weights={};
+  for(let i=0;i<N;i++)metaCells[i].textContent=fmt(plan(i));
+  document.getElementById('rateInfo').textContent='Ritmo previsto: '+fmt(rateAt(0),0)+' g/dia no início, '+fmt(rateAt(N-1),0)+' g/dia no fim.';
+  for(let i=0;i<N;i++){
+    const r=recs[i]||{};
+    F.forEach(f=>{const inp=inputs[i][f.k];if(document.activeElement!==inp)inp.value=r[f.k]!==undefined?fmt(r[f.k],f.d):''});
+    if(r.kg!==undefined)weights[i]=r.kg;
+    const w=r.kg,td=diffs[i];
+    if(w===undefined){td.textContent='';td.className='';}
+    else{const d=Math.round((w-plan(i))*10)/10;td.textContent=(d>0?'+':'')+fmt(d)+' kg';td.className=d<=0?'ok':'no'}
+  }
+  const keys=Object.keys(weights).map(Number).sort((a,b)=>a-b), last=keys[keys.length-1];
+  const ti=Math.min(Math.max(T,0),N-1);
+  document.getElementById('tTarget').textContent=fmt(plan(ti))+' kg';
+  document.getElementById('tTargetN').textContent=T<0?'plano começa em '+dbr(0):T>=N?'meta final':'dia '+T+' · '+dbr(ti);
+  if(last!==undefined){
+    const w=weights[last],d=Math.round((w-plan(last))*10)/10;
+    document.getElementById('tLast').textContent=fmt(w)+' kg';
+    document.getElementById('tLastN').textContent=dbr(last);
+    const e=document.getElementById('tDiff');e.textContent=(d>0?'+':'')+fmt(d)+' kg';e.className='v '+(d<=0?'ok':'no');
+    document.getElementById('tDiffN').textContent=d<=0?'à frente da meta':'atrás da meta';
+    document.getElementById('tLeft').textContent=fmt(Math.max(0,w-GOAL))+' kg';
+    document.getElementById('tLeftN').textContent='para chegar a '+GOAL+' kg';
+  }else{
+    ['tLast','tDiff','tLeft'].forEach(id=>document.getElementById(id).textContent='–');
+    document.getElementById('tDiffN').textContent='registre seu peso abaixo';
+    document.getElementById('tLeftN').textContent='';
+  }
+  chart(keys);
+}
+function chart(keys){
+  const W=700,H=260,L=44,R=12,Tp=12,B=26,mn=78,mx=104;
+  const x=i=>L+(W-L-R)*i/(N-1), y=v=>Tp+(H-Tp-B)*(mx-v)/(mx-mn);
+  let s='';
+  for(let v=80;v<=104;v+=4){s+=`<line x1="${L}" x2="${W-R}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line)"/><text x="${L-6}" y="${y(v)+4}" text-anchor="end" font-size="11" fill="var(--muted)">${v}</text>`}
+  [0,60,120,180,216].forEach(i=>{s+=`<text x="${x(i)}" y="${H-8}" text-anchor="${i===0?'start':i===216?'end':'middle'}" font-size="11" fill="var(--muted)">${dbr(i).slice(0,5)}</text>`});
+  s+=`<polyline fill="none" stroke="var(--muted)" stroke-width="2" stroke-dasharray="5 4" points="${Array.from({length:N},(_,i)=>x(i)+','+y(plan(i))).join(' ')}"/>`;
+  if(keys.length){
+    s+=`<polyline fill="none" stroke="var(--accent)" stroke-width="3" stroke-linejoin="round" points="${keys.map(i=>x(i)+','+y(weights[i])).join(' ')}"/>`;
+    const k=keys[keys.length-1];
+    s+=`<circle cx="${x(k)}" cy="${y(weights[k])}" r="5" fill="var(--accent)"/><text x="${x(k)}" y="${y(weights[k])-10}" text-anchor="middle" font-size="12" font-weight="600" fill="var(--ink)">${fmt(weights[k])}</text>`;
+  }
+  document.getElementById('chart').innerHTML=s;
+}
+function apply(list){recs={};list.forEach(r=>{if(r&&typeof r.idx==='number'){const o={};F.forEach(f=>{if(typeof r[f.k]==='number')o[f.k]=r[f.k]});if(Object.keys(o).length)recs[r.idx]=o}});render()}
+render();
+let app,auth,db,uid=null,unsub=null;
+const loginBtn=document.getElementById('bLogin');
+try{const raw=localStorage.getItem('registros');if(raw)recs=JSON.parse(raw)||{}}catch(e){}
+document.getElementById('tau').value=String(Math.round(tau));
+document.getElementById('tau').addEventListener('change',async e=>{
+  const t=parseFloat(String(e.target.value).replace(',','.'));
+  if(!isFinite(t)||t<30||t>2000){status.textContent='Use um valor de τ entre 30 e 2000 dias.';e.target.value=String(Math.round(tau));return}
+  setTau(t);try{localStorage.setItem('tau',String(t))}catch(x){}render();
+  try{if(uid)await setDoc(doc(db,'users',uid,'dias','cfg'),{tau:t})}catch(x){}
+  status.textContent='Curva atualizada.';
+});
+render();
+try{
+  app=initializeApp(firebaseConfig);auth=getAuth(app);
+  db=initializeFirestore(app,{localCache:persistentLocalCache()});
+}catch(e){status.textContent='Não consegui conectar ao Firebase.'}
+function pushLocalMissing(cloud){
+  // envia para a nuvem dias que só existem no aparelho
+  Object.keys(recs).forEach(k=>{if(!cloud[k])setDoc(doc(db,'users',uid,'dias','d'+k),Object.assign({idx:+k,date:dstr(+k)},recs[k])).catch(()=>{})});
+}
+if(auth)onAuthStateChanged(auth,u=>{
+  if(unsub){unsub();unsub=null}
+  if(!u){uid=null;loginBtn.textContent='Entrar com Google';status.textContent='Entre com o Google para sincronizar entre aparelhos.';return}
+  uid=u.uid;loginBtn.textContent='Sair ('+(u.email||'conta')+')';status.textContent='Carregando…';
+  let first=true;
+  unsub=onSnapshot(collection(db,'users',uid,'dias'),snap=>{
+    const cloud={};let cfgTau=null;snap.forEach(d=>{const r=d.data();if(d.id==='cfg'&&r&&typeof r.tau==='number')cfgTau=r.tau;if(r&&typeof r.idx==='number'){const o={};F.forEach(f=>{if(typeof r[f.k]==='number')o[f.k]=r[f.k]});if(Object.keys(o).length)cloud[r.idx]=o}});
+    if(first){first=false;pushLocalMissing(cloud);Object.keys(recs).forEach(k=>{if(!cloud[k])cloud[k]=recs[k]})}
+    if(cfgTau!==null&&cfgTau>=30){setTau(cfgTau);document.getElementById('tau').value=String(Math.round(tau));try{localStorage.setItem('tau',String(tau))}catch(x){}}
+    recs=cloud;try{localStorage.setItem('registros',JSON.stringify(recs))}catch(e){}
+    render();status.textContent='Sincronizado.';
+  },err=>{status.textContent='Sem permissão ou sem conexão com o banco. Confira as regras do Firestore.'});
+});
+loginBtn.addEventListener('click',async()=>{
+  if(!auth)return;
+  try{if(uid)await signOut(auth);else await signInWithPopup(auth,new GoogleAuthProvider())}
+  catch(e){status.textContent='Não consegui entrar. Permita pop-ups e tente de novo.'}
+});
+function exportar(){
+  const blob=new Blob([JSON.stringify(recs,null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='peso-backup-'+new Date().toISOString().slice(0,10)+'.json';
+  document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+}
+function importar(file){
+  if(!file)return;const r=new FileReader();
+  r.onload=()=>{try{const o=JSON.parse(r.result);if(typeof o!=='object'||o===null)throw 0;recs=o;localStorage.setItem('registros',JSON.stringify(recs));render();if(uid)Object.keys(recs).forEach(k=>setDoc(doc(db,'users',uid,'dias','d'+k),Object.assign({idx:+k,date:dstr(+k)},recs[k])).catch(()=>{}));status.textContent='Backup importado.'}catch(e){status.textContent='Arquivo de backup inválido.'}};
+  r.readAsText(file);
+}
+document.getElementById('bExp').addEventListener('click',exportar);
+document.getElementById('fImp').addEventListener('change',e=>{importar(e.target.files[0]);e.target.value=''});
+</script>
+</body>
+</html>
