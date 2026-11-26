@@ -63,7 +63,7 @@ svg text{font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
 <div class="chart" id="c-acum"></div>
 <p class="note">Em cima: saldo de cada dia. Embaixo: <b>média acumulada</b> do saldo, do 1º dia do período até o dia (mesmos dias na vertical, mesma escala e mesma linha de zero). Saldo = calorias consumidas − gasto de <span id="gastolbl"></span> kcal · <b style="color:var(--green)">verde, para baixo</b> = déficit (perda de gordura) · <b style="color:var(--red)">vermelho, para cima</b> = superávit (ganho) · toque no dia para ver os detalhes.</p>
 
-<h2 id="t-proj">Projeção do déficit calórico até o fim do mês</h2>
+<h2 id="t-proj">Simulação de Monte Carlo: déficit calórico até o fim do mês</h2>
 <div class="chart" id="c-proj"></div>
 <p class="note" id="proj-nota"></p>
 
@@ -192,7 +192,7 @@ function calcProj(){
  return {n,R,m,sd:Math.sqrt(s2),base,th,q05:q(.05),q50:q(.5),q95,ini:amostra[0].label,fim:amostra[n-1].label,nmes:doMes.length,iniMes:doMes.length?doMes[0].label:null,fimMes:String(fimMes).padStart(2,'0')+'/'+String(mes).padStart(2,'0'),mesNome:MESES[mes-1]};
 }
 function chartProj(){
- const el=$('c-proj'),nota=$('proj-nota');if(!PROJ)PROJ=calcProj();const P=PROJ;if(P)$('t-proj').textContent='Projeção do déficit calórico até o fim de '+P.mesNome;
+ const el=$('c-proj'),nota=$('proj-nota');if(!PROJ)PROJ=calcProj();const P=PROJ;if(P)$('t-proj').textContent='Simulação de Monte Carlo: déficit calórico até o fim de '+P.mesNome;
  if(!P||P.R<=0){el.replaceChildren();nota.textContent=P?'O mês já terminou: não há dias restantes para projetar.':'Poucos dias fechados para projetar.';return;}
  const rh=26,top=30,m={l:84,r:58,b:6},H=top+m.b+P.th.length*rh;const {svg,tip,W}=frame(el,H);
  svg.setAttribute('aria-label','Barras horizontais com a probabilidade de o déficit acumulado chegar a cada valor até o fim do mês');
