@@ -64,7 +64,7 @@ svg text{font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
 <p class="note">Em cima: saldo de cada dia. Embaixo: <b>média acumulada</b> do saldo, do 1º dia do período até o dia (mesmos dias na vertical, mesma escala e mesma linha de zero). Saldo = calorias consumidas − gasto de <span id="gastolbl"></span> kcal · <b style="color:var(--green)">verde, para baixo</b> = déficit (perda de gordura) · <b style="color:var(--red)">vermelho, para cima</b> = superávit (ganho) · toque no dia para ver os detalhes.</p>
 
 <h2 id="t-proj">Simulação de Monte Carlo: gordura perdida (déficit calórico) até o fim do mês</h2>
-<div class="presets" id="projmodo" style="margin:4px 0 8px"><span style="align-self:center;font-size:13px;color:var(--muted)">Mostrar:</span><button data-pm="a" class="on">Pelo menos X</button><button data-pm="f">Entre X e Y</button></div>
+<div class="presets" id="projmodo" style="margin:4px 0 8px"><span style="align-self:center;font-size:13px;color:var(--muted)">Mostrar:</span><button data-pm="a">Pelo menos X</button><button data-pm="f" class="on">Entre X e Y</button></div>
 <div class="chart" id="c-proj"></div>
 <p class="note" id="proj-nota"></p>
 
@@ -193,7 +193,7 @@ function calcProj(){
  const bins=[];for(let i=0;i<=10;i++){const lo=i===0?-Infinity:i*step,hi=i===10?Infinity:(i+1)*step;bins.push([lo,hi,srt.filter((v)=>v>=lo*KG&&v<hi*KG).length/N]);}
  return {n,R,m,sd:Math.sqrt(s2),base,th,bins,step,q05:q(.05),q50:q(.5),q95,ini:amostra[0].label,fim:amostra[n-1].label,nmes:doMes.length,iniMes:doMes.length?doMes[0].label:null,fimMes:String(fimMes).padStart(2,'0')+'/'+String(mes).padStart(2,'0'),mesNome:MESES[mes-1]};
 }
-let projModo='a';
+let projModo='f';
 const gfmt=(g)=>g>=1000?(g/1000).toFixed(g%1000?1:0).replace('.',',')+' kg':nf(g)+' g';
 function chartProj(){
  const el=$('c-proj'),nota=$('proj-nota');if(!PROJ)PROJ=calcProj();const P=PROJ;if(P)$('t-proj').textContent='Simulação de Monte Carlo: gordura perdida (déficit calórico) até o fim de '+P.mesNome;
