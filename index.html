@@ -27,6 +27,7 @@ input[type=range]{display:block;width:100%;margin:6px 0 0}
 .note{font-size:12.5px;color:var(--muted);margin:6px 0 0}
 .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-top:12px}
 .kpi{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px}
+.kt{font-size:13px;font-weight:600;color:var(--muted);margin:18px 0 0;text-transform:uppercase;letter-spacing:.04em}
 .kpi .l{font-size:12.5px;color:var(--muted)}
 .kpi .v{font-family:Georgia,serif;font-size:27px;margin-top:4px;font-variant-numeric:tabular-nums}
 .tip{position:absolute;pointer-events:none;background:var(--panel);border:1px solid var(--line);box-shadow:0 4px 14px rgba(0,0,0,.18);color:var(--muted);font-size:12.5px;padding:6px 8px;border-radius:6px;white-space:pre-line;z-index:2;display:none}
@@ -79,8 +80,9 @@ svg text{font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
 <p class="note">Faixas em horas (h) · mediana só entre os dias com consumo na faixa · ponto maior = mais dias com refeição · tracejado = tendência linear (<span id="incl">—</span> kcal por faixa).</p>
 
 <h2>Resumo do período</h2>
-<div class="kpis" id="k1"></div>
-<div class="kpis" id="k2"></div>
+<h3 class="kt">Balanço energético</h3><div class="kpis" id="k1"></div>
+<h3 class="kt">Macronutrientes e fibra (média diária)</h3><div class="kpis" id="k2"></div>
+<h3 class="kt">Saciedade e horário</h3><div class="kpis" id="k3"></div>
 <p class="note">Gordura equivalente: 7.700 kcal ≈ 1 kg de gordura (estimativa). Refeições depois da meia-noite contam no dia anterior. Valores estimados a partir das porções informadas. Dados até 24/11/2026.</p>
 </div>
 <script>
@@ -275,8 +277,10 @@ function render(){
  $('gastolbl').textContent=nf(GASTO);$('incl').textContent=sg(f.slope);
  chartDias(s);chartKcal(rows);chartAcum(rows);chartMacros(rows);chartFF(rows);chartAlim(rows);chartFaixas(f.out,rows.length);
  const sum=(k)=>rows.reduce((a,r)=>a+r[k],0);const def=rows.reduce((a,r)=>a+(GASTO-r.kcal),0);const n=rows.length;
- kpis('k1',[['Faixa de pico',pico?pico.faixa:'—'],['Mediana no pico (kcal)',pico?nf(pico.mediana):'—'],['Média diária (kcal)',nf(sum('kcal')/n)],['FF médio do dia',(()=>{const o=rows.filter((r)=>r.ff!=null);return o.length?(o.reduce((a,r)=>a+r.ff,0)/o.length).toFixed(2).replace('.',','):'—';})()]]);
- kpis('k2',[['Déficit acumulado (kcal)',nf(def)],['Déficit médio (kcal/dia)',nf(def/n)],['Gordura equivalente (g)',nf(def/7.7)],['Proteína média (g/dia)',nf(sum('p')/n)],['Carboidrato médio (g/dia)',nf(sum('c')/n)],['Gordura média (g/dia)',nf(sum('g')/n)],['Fibra média (g/dia)',nf(sum('f')/n)]]);
+ const ffm=(()=>{const o=rows.filter((r)=>r.ff!=null);return o.length?(o.reduce((a,r)=>a+r.ff,0)/o.length).toFixed(2).replace('.',','):'—';})();
+ kpis('k1',[['Déficit acumulado (kcal)',nf(def)],['Déficit médio (kcal/dia)',nf(def/n)],['Gordura equivalente (g)',nf(def/7.7)],['Consumo médio (kcal/dia)',nf(sum('kcal')/n)]]);
+ kpis('k2',[['Proteína (g/dia)',nf(sum('p')/n)],['Carboidrato (g/dia)',nf(sum('c')/n)],['Gordura (g/dia)',nf(sum('g')/n)],['Fibra (g/dia)',nf(sum('f')/n)]]);
+ kpis('k3',[['FF médio do dia',ffm],['Faixa de pico',pico?pico.faixa:'—'],['Mediana no pico (kcal)',pico?nf(pico.mediana):'—']]);
 }
 DATA.forEach((d,i)=>{['de','ate'].forEach((id)=>{const o=document.createElement('option');o.value=i;o.textContent=d.label;$(id).appendChild(o);});});
 function setRange(a,b){if(a>b){if(document.activeElement===$('ate'))a=b;else b=a;}st.fim=b;st.jan=b-a+1;st.p=-1;render();}
