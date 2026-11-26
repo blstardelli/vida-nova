@@ -30,6 +30,7 @@ Patinho moído: 219 kcal/100 g nos registros, 171 kcal/100 g (P29, G6) para o FF
 
 ## Site (index.html, Raio-X de Bruno)
 - `site_template.html` + `build_site.py` leem `dados/*.json` (copiados de `out/`) e geram o index. Placeholders `/*DATA*/[]` e `__ULTIMO__`.
+- Projeção (seção "Projeção do saldo"): sempre do mês vigente (data do navegador); déficit acumulado só dos dias do mês; consumo estimado com os últimos 30 dias fechados; degraus de 1.000 kcal (ajustam sozinhos se q95 passar de 10.000).
 - Dia aberto: `DIA_ABERTO=<dd/mm>` marca a última linha como `aberto` (botão "Hoje: sim/não" e aviso de parcial).
 - Gráfico "O que consumi": ordenação por kcal, FF, Registros e IG (botão Combinar = ordenação múltipla), colunas Reg., FF e IG.
 - Cartões: Balanço energético; Macronutrientes e fibra; Saciedade e horário.
