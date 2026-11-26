@@ -5,7 +5,7 @@ cd /home/claude
 R=/home/claude/vida-nova
 git -C $R fetch -q --depth=1 origin main && git -C $R checkout -q main && git -C $R reset -q --hard origin/main
 cp site/index.html $R/index.html
-mkdir -p $R/backup/dados $R/backup/scripts
+rm -rf $R/backup && mkdir -p $R/backup/dados $R/backup/scripts
 cp out/refeicoes.json out/diario.json out/ff_prato.json out/alimentos_dia.json $R/backup/dados/
 cp open_day.json $R/backup/open_day.json
 cp REGRAS.md $R/backup/REGRAS.md
