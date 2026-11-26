@@ -37,4 +37,4 @@ Patinho moído: 219 kcal/100 g nos registros, 171 kcal/100 g (P29, G6) para o FF
 - Ao fechar um dia: gravar o dia definitivo em refeicoes/diario/ff_prato/alimentos_dia (com contagem de registros por alimento).
 
 ## Estado
-Dados fechados: 11/11 a 24/11. Dia aberto: ver `open_day.json`.
+Dados fechados: 11/11 a 25/11. Dia aberto: ver `open_day.json` (26/11, sem registros ainda). Para fechar um dia: `python3 publish_open_day.py --fechar` e depois `./push_repo.sh`, e zerar `open_day.json` para o próximo dia.

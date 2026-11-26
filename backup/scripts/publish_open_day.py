@@ -16,6 +16,7 @@ for e in E:
     a=ag.setdefault(e['n'],[0,0]);a[0]+=e['k'];a[1]+=1
 A[lab]=[{"n":n,"k":round(k),"c":c} for n,(k,c) in sorted(ag.items(),key=lambda x:-x[1][0])]
 for f,v in zip(J,[R,D,F,A]): json.dump(v,open(f'out/{f}.json','w'),ensure_ascii=False)
-import os;subprocess.run(['python3','build_site.py'],check=True,env={**os.environ,'DIA_ABERTO':lab},stdout=subprocess.DEVNULL)
-for f in J: shutil.copy(f'bak/{f}.json',f'out/{f}.json')
+import os;FECHAR='--fechar' in sys.argv;subprocess.run(['python3','build_site.py'],check=True,env={**os.environ,**({} if FECHAR else {'DIA_ABERTO':lab})},stdout=subprocess.DEVNULL)
+if not FECHAR:
+    for f in J: shutil.copy(f'bak/{f}.json',f'out/{f}.json')
 print('ok',D[-1])
