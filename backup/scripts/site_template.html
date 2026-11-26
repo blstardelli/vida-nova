@@ -63,7 +63,7 @@ svg text{font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
 <div class="chart" id="c-acum"></div>
 <p class="note">Em cima: saldo de cada dia. Embaixo: <b>média acumulada</b> do saldo, do 1º dia do período até o dia (mesmos dias na vertical, mesma escala e mesma linha de zero). Saldo = calorias consumidas − gasto de <span id="gastolbl"></span> kcal · <b style="color:var(--green)">verde, para baixo</b> = déficit (perda de gordura) · <b style="color:var(--red)">vermelho, para cima</b> = superávit (ganho) · toque no dia para ver os detalhes.</p>
 
-<h2>Projeção do saldo até o fim do mês</h2>
+<h2 id="t-proj">Projeção do saldo até o fim do mês</h2>
 <div class="chart" id="c-proj"></div>
 <p class="note" id="proj-nota"></p>
 
@@ -173,26 +173,30 @@ function chartAcum(rows){
 }
 
 let PROJ=null;
+const MESES=['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
 function calcProj(){
- const closed=ALL.filter((r)=>!r.aberto);const n=closed.length;if(n<3)return null;
- const lp=closed[n-1].label.split('/').map(Number);const mes=lp[1];const fimMes=new Date(2026,mes,0).getDate();
- const R=Math.round((Date.UTC(2026,mes-1,fimMes)-Date.UTC(2026,mes-1,lp[0]))/864e5);
- const k=closed.map((r)=>r.kcal);const m=k.reduce((a,v)=>a+v,0)/n;const s2=k.reduce((a,v)=>a+(v-m)*(v-m),0)/(n-1);
- const base=k.reduce((a,v)=>a+(GASTO-v),0);
+ const hoje=new Date();const ano=hoje.getFullYear(),mes=hoje.getMonth()+1,fimMes=new Date(ano,mes,0).getDate();
+ const closed=ALL.filter((r)=>!r.aberto);const amostra=closed.slice(-30);const n=amostra.length;if(n<3)return null;
+ const doMes=closed.filter((r)=>Number(r.label.split('/')[1])===mes);
+ const base=doMes.reduce((a,r)=>a+(GASTO-r.kcal),0);
+ const ultimo=doMes.length?Number(doMes[doMes.length-1].label.split('/')[0]):hoje.getDate()-1;
+ const R=Math.max(0,fimMes-ultimo);
+ const k=amostra.map((r)=>r.kcal);const m=k.reduce((a,v)=>a+v,0)/n;const s2=k.reduce((a,v)=>a+(v-m)*(v-m),0)/(n-1);
  let seed=20261126;const rnd=()=>{seed|=0;seed=seed+0x6D2B79F5|0;let t=Math.imul(seed^seed>>>15,1|seed);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};
  const nrm=()=>Math.sqrt(-2*Math.log(1-rnd()))*Math.cos(2*Math.PI*rnd());
  const N=20000,tot=new Float64Array(N);
  for(let i=0;i<N;i++){let c=0;for(let j=0;j<n-1;j++){const z=nrm();c+=z*z;}const sig=Math.sqrt((n-1)*s2/c);const mu=m+sig/Math.sqrt(n)*nrm();let f=0;for(let d=0;d<R;d++)f+=GASTO-(mu+sig*nrm());tot[i]=base+f;}
  const srt=Array.from(tot).sort((a,b)=>a-b);const q=(p)=>srt[Math.floor(p*(N-1))];
- const th=[];for(let t=1000;t<=10000;t+=1000){th.push([t,srt.filter((v)=>v>=t).length/N]);}
- return {n,R,m,sd:Math.sqrt(s2),base,th,q05:q(.05),q50:q(.5),q95:q(.95),ini:closed[0].label,fim:closed[n-1].label,fimMes:String(fimMes).padStart(2,'0')+'/'+String(mes).padStart(2,'0')};
+ const q95=q(.95);const step=[1000,2000,2500,5000,10000,20000].find((v)=>q95/10<=v)||50000;
+ const th=[];for(let t=step;t<=step*10;t+=step){th.push([t,srt.filter((v)=>v>=t).length/N]);}
+ return {n,R,m,sd:Math.sqrt(s2),base,th,q05:q(.05),q50:q(.5),q95,ini:amostra[0].label,fim:amostra[n-1].label,nmes:doMes.length,iniMes:doMes.length?doMes[0].label:null,fimMes:String(fimMes).padStart(2,'0')+'/'+String(mes).padStart(2,'0'),mesNome:MESES[mes-1]};
 }
 function chartProj(){
- const el=$('c-proj'),nota=$('proj-nota');if(!PROJ)PROJ=calcProj();const P=PROJ;
+ const el=$('c-proj'),nota=$('proj-nota');if(!PROJ)PROJ=calcProj();const P=PROJ;if(P)$('t-proj').textContent='Projeção do saldo até o fim de '+P.mesNome;
  if(!P||P.R<=0){el.replaceChildren();nota.textContent=P?'O mês já terminou: não há dias restantes para projetar.':'Poucos dias fechados para projetar.';return;}
  const rh=26,top=30,m={l:84,r:58,b:6},H=top+m.b+P.th.length*rh;const {svg,tip,W}=frame(el,H);
  svg.setAttribute('aria-label','Barras horizontais com a probabilidade de o déficit acumulado chegar a cada valor até o fim do mês');
- S('text',{x:6,y:14,'font-size':11,'font-weight':600,fill:cv('--muted')},svg,'déficit acumulado até '+P.fimMes+' de pelo menos (kcal)');
+ S('text',{x:6,y:14,'font-size':11,'font-weight':600,fill:cv('--muted')},svg,'déficit acumulado em '+P.mesNome+' (até '+P.fimMes+') de pelo menos (kcal)');
  const bw=W-m.l-m.r;
  P.th.forEach(([t,pr],i)=>{const y=top+i*rh;
   S('text',{x:m.l-10,y:y+rh/2+4,'text-anchor':'end','font-size':12,'font-weight':600,fill:cv('--fg')},svg,'≥ '+nf(t));
@@ -205,7 +209,7 @@ function chartProj(){
   hit.addEventListener('pointermove',(ev)=>{const b=el.getBoundingClientRect();showTip(el,tip,'déficit ≥ '+nf(t)+' kcal (≈ '+(t/7700).toFixed(2).replace('.',',')+' kg)\nprobabilidade: '+(pr*100).toFixed(1).replace('.',',')+'%',ev.clientX-b.left,ev.clientY-b.top);});
   hit.addEventListener('pointerleave',()=>{tip.style.display='none';});});
  const f=(v)=>nf(v);
- nota.innerHTML='<b>Método:</b> simulação de Monte Carlo (20.000 sorteios). Parte dos <b>'+P.n+' dias fechados</b> ('+P.ini+' a '+P.fim+'): consumo médio de <b>'+f(P.m)+' kcal/dia</b>, com variação típica de ±'+f(P.sd)+'. Para cada um dos <b>'+P.R+' dias restantes</b> até '+P.fimMes+' (incluindo o dia em andamento) sorteia o consumo de uma distribuição normal; como média e variação vêm de poucos dias, elas também são sorteadas (equivale a uma t de Student). Soma o déficit já acumulado (<b>'+f(P.base)+' kcal</b>, com gasto de '+f(GASTO)+'/dia) ao simulado e conta em quantos sorteios ele atinge cada valor. Cenário central: <b>'+f(P.q50)+' kcal</b> (90% dos casos entre '+f(P.q05)+' e '+f(P.q95)+'). É uma estimativa: amostra pequena e gasto tratado como fixo. A projeção não muda com os filtros e não usa o dia em andamento.';
+ nota.innerHTML='<b>Método:</b> simulação de Monte Carlo (20.000 sorteios) para <b>'+P.mesNome+'</b>, sempre o mês vigente: quando o mês vira, tudo é recalculado para o novo mês. O consumo diário é estimado com os <b>'+P.n+' últimos dias fechados</b> ('+P.ini+' a '+P.fim+'; no máximo 30): média de <b>'+f(P.m)+' kcal/dia</b>, variação típica de ±'+f(P.sd)+'. Para cada um dos <b>'+P.R+' dias restantes</b> até '+P.fimMes+' (incluindo o dia em andamento) sorteia o consumo de uma distribuição normal; como média e variação vêm de poucos dias, elas também são sorteadas (equivale a uma t de Student). Soma o déficit já acumulado <b>no mês</b> ('+(P.nmes?P.nmes+(P.nmes>1?' dias':' dia')+', '+P.iniMes+' em diante':'nenhum dia fechado ainda')+': <b>'+f(P.base)+' kcal</b>, com gasto de '+f(GASTO)+'/dia) ao simulado e conta em quantos sorteios ele atinge cada valor. Cenário central: <b>'+f(P.q50)+' kcal</b> (90% dos casos entre '+f(P.q05)+' e '+f(P.q95)+'). É uma estimativa: amostra pequena e gasto tratado como fixo. Não muda com os filtros nem usa o dia em andamento.';
 }
 function chartMacros(rows){
  const el=$('c-macros');const W0=Math.max(280,el.clientWidth),H=Math.round(Math.max(270,Math.min(390,W0*.56)));
