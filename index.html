@@ -63,6 +63,10 @@ svg text{font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
 <div class="chart" id="c-acum"></div>
 <p class="note">Em cima: saldo de cada dia. Embaixo: <b>média acumulada</b> do saldo, do 1º dia do período até o dia (mesmos dias na vertical, mesma escala e mesma linha de zero). Saldo = calorias consumidas − gasto de <span id="gastolbl"></span> kcal · <b style="color:var(--green)">verde, para baixo</b> = déficit (perda de gordura) · <b style="color:var(--red)">vermelho, para cima</b> = superávit (ganho) · toque no dia para ver os detalhes.</p>
 
+<h2>Projeção do saldo até o fim do mês</h2>
+<div class="chart" id="c-proj"></div>
+<p class="note" id="proj-nota"></p>
+
 <h2>Macronutrientes e fibra por dia</h2>
 <div class="chart" id="c-macros"></div>
 <p class="note">Gramas por dia · valores estimados a partir das porções informadas.</p>
@@ -166,6 +170,42 @@ function chartAcum(rows){
   hit.addEventListener('pointerleave',()=>{tip.style.display='none';});});
  S('line',{x1:m.l,x2:m.l+22,y1:12,y2:12,stroke:cv('--fg'),'stroke-width':2.2},svg);S('circle',{cx:m.l+11,cy:12,r:4.5,fill:cv('--green'),stroke:cv('--bg'),'stroke-width':2},svg);
  S('text',{x:m.l+28,y:16,'font-size':12,fill:cv('--fg')},svg,'média acumulada do saldo (kcal/dia)');
+}
+
+let PROJ=null;
+function calcProj(){
+ const closed=ALL.filter((r)=>!r.aberto);const n=closed.length;if(n<3)return null;
+ const lp=closed[n-1].label.split('/').map(Number);const mes=lp[1];const fimMes=new Date(2026,mes,0).getDate();
+ const R=Math.round((Date.UTC(2026,mes-1,fimMes)-Date.UTC(2026,mes-1,lp[0]))/864e5);
+ const k=closed.map((r)=>r.kcal);const m=k.reduce((a,v)=>a+v,0)/n;const s2=k.reduce((a,v)=>a+(v-m)*(v-m),0)/(n-1);
+ const base=k.reduce((a,v)=>a+(GASTO-v),0);
+ let seed=20261126;const rnd=()=>{seed|=0;seed=seed+0x6D2B79F5|0;let t=Math.imul(seed^seed>>>15,1|seed);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};
+ const nrm=()=>Math.sqrt(-2*Math.log(1-rnd()))*Math.cos(2*Math.PI*rnd());
+ const N=20000,tot=new Float64Array(N);
+ for(let i=0;i<N;i++){let c=0;for(let j=0;j<n-1;j++){const z=nrm();c+=z*z;}const sig=Math.sqrt((n-1)*s2/c);const mu=m+sig/Math.sqrt(n)*nrm();let f=0;for(let d=0;d<R;d++)f+=GASTO-(mu+sig*nrm());tot[i]=base+f;}
+ const srt=Array.from(tot).sort((a,b)=>a-b);const q=(p)=>srt[Math.floor(p*(N-1))];
+ const th=[];for(let t=1000;t<=10000;t+=1000){th.push([t,srt.filter((v)=>v>=t).length/N]);}
+ return {n,R,m,sd:Math.sqrt(s2),base,th,q05:q(.05),q50:q(.5),q95:q(.95),ini:closed[0].label,fim:closed[n-1].label,fimMes:String(fimMes).padStart(2,'0')+'/'+String(mes).padStart(2,'0')};
+}
+function chartProj(){
+ const el=$('c-proj'),nota=$('proj-nota');if(!PROJ)PROJ=calcProj();const P=PROJ;
+ if(!P||P.R<=0){el.replaceChildren();nota.textContent=P?'O mês já terminou: não há dias restantes para projetar.':'Poucos dias fechados para projetar.';return;}
+ const rh=26,top=30,m={l:84,r:58,b:6},H=top+m.b+P.th.length*rh;const {svg,tip,W}=frame(el,H);
+ svg.setAttribute('aria-label','Barras horizontais com a probabilidade de o déficit acumulado chegar a cada valor até o fim do mês');
+ S('text',{x:6,y:14,'font-size':11,'font-weight':600,fill:cv('--muted')},svg,'déficit acumulado até '+P.fimMes+' de pelo menos (kcal)');
+ const bw=W-m.l-m.r;
+ P.th.forEach(([t,pr],i)=>{const y=top+i*rh;
+  S('text',{x:m.l-10,y:y+rh/2+4,'text-anchor':'end','font-size':12,'font-weight':600,fill:cv('--fg')},svg,'≥ '+nf(t));
+  S('rect',{x:m.l,y:y+4,width:bw,height:rh-8,rx:5,fill:cv('--grid'),opacity:.55},svg);
+  const col=pr>=.66?cv('--green'):pr>=.33?cv('--orange'):cv('--red');
+  if(pr>0.002)S('rect',{x:m.l,y:y+4,width:Math.max(3,bw*pr),height:rh-8,rx:5,fill:col,opacity:.8},svg);
+  const pc=pr>=.995?'>99%':pr<.005?'<1%':Math.round(pr*100)+'%';
+  S('text',{x:W-m.r+8,y:y+rh/2+4,'font-size':12.5,'font-weight':700,fill:cv('--fg')},svg,pc);
+  const hit=S('rect',{x:0,y:y,width:W,height:rh,fill:'transparent'},svg);
+  hit.addEventListener('pointermove',(ev)=>{const b=el.getBoundingClientRect();showTip(el,tip,'déficit ≥ '+nf(t)+' kcal (≈ '+(t/7700).toFixed(2).replace('.',',')+' kg)\nprobabilidade: '+(pr*100).toFixed(1).replace('.',',')+'%',ev.clientX-b.left,ev.clientY-b.top);});
+  hit.addEventListener('pointerleave',()=>{tip.style.display='none';});});
+ const f=(v)=>nf(v);
+ nota.innerHTML='<b>Método:</b> simulação de Monte Carlo (20.000 sorteios). Parte dos <b>'+P.n+' dias fechados</b> ('+P.ini+' a '+P.fim+'): consumo médio de <b>'+f(P.m)+' kcal/dia</b>, com variação típica de ±'+f(P.sd)+'. Para cada um dos <b>'+P.R+' dias restantes</b> até '+P.fimMes+' (incluindo o dia em andamento) sorteia o consumo de uma distribuição normal; como média e variação vêm de poucos dias, elas também são sorteadas (equivale a uma t de Student). Soma o déficit já acumulado (<b>'+f(P.base)+' kcal</b>, com gasto de '+f(GASTO)+'/dia) ao simulado e conta em quantos sorteios ele atinge cada valor. Cenário central: <b>'+f(P.q50)+' kcal</b> (90% dos casos entre '+f(P.q05)+' e '+f(P.q95)+'). É uma estimativa: amostra pequena e gasto tratado como fixo. A projeção não muda com os filtros e não usa o dia em andamento.';
 }
 function chartMacros(rows){
  const el=$('c-macros');const W0=Math.max(280,el.clientWidth),H=Math.round(Math.max(270,Math.min(390,W0*.56)));
@@ -276,7 +316,7 @@ function render(){
  const dT=rows.reduce((a,r)=>a+(GASTO-r.kcal),0);const gk=dT/7700;
  $('frase').textContent='No período de '+rows[0].label+' a '+rows[rows.length-1].label+' ('+rows.length+(rows.length===1?' dia':' dias')+'), o '+(dT>=0?'déficit':'superávit')+' calórico total foi de '+nf(Math.abs(dT))+' kcal (≈ '+(Math.abs(gk).toFixed(2).replace('.',','))+' kg de gordura '+(dT>=0?'perdida':'ganha')+').';
  $('gastolbl').textContent=nf(GASTO);$('incl').textContent=sg(f.slope);
- chartDias(s);chartKcal(rows);chartAcum(rows);chartMacros(rows);chartFF(rows);chartAlim(rows);chartFaixas(f.out,rows.length);
+ chartDias(s);chartKcal(rows);chartAcum(rows);chartProj();chartMacros(rows);chartFF(rows);chartAlim(rows);chartFaixas(f.out,rows.length);
  const sum=(k)=>rows.reduce((a,r)=>a+r[k],0);const def=rows.reduce((a,r)=>a+(GASTO-r.kcal),0);const n=rows.length;
  const ffm=(()=>{const o=rows.filter((r)=>r.ff!=null);return o.length?(o.reduce((a,r)=>a+r.ff,0)/o.length).toFixed(2).replace('.',','):'—';})();
  kpis('k1',[['Déficit acumulado (kcal)',nf(def)],['Déficit médio (kcal/dia)',nf(def/n)],['Gordura equivalente (g)',nf(def/7.7)],['Consumo médio (kcal/dia)',nf(sum('kcal')/n)]]);
