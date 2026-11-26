@@ -64,7 +64,7 @@ svg text{font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
 <p class="note">Em cima: saldo de cada dia. Embaixo: <b>média acumulada</b> do saldo, do 1º dia do período até o dia (mesmos dias na vertical, mesma escala e mesma linha de zero). Saldo = calorias consumidas − gasto de <span id="gastolbl"></span> kcal · <b style="color:var(--green)">verde, para baixo</b> = déficit (perda de gordura) · <b style="color:var(--red)">vermelho, para cima</b> = superávit (ganho) · toque no dia para ver os detalhes.</p>
 
 <h2 id="t-proj">Simulação de Monte Carlo: gordura perdida (déficit calórico) até o fim do mês</h2>
-<div class="presets" id="projhor" style="margin:4px 0 4px"><span style="align-self:center;font-size:13px;color:var(--muted)">Até:</span><button id="ph-m" data-ph="m" class="on">Fim do mês</button><button id="ph-a" data-ph="a">Fim do ano</button></div>
+<div class="presets" id="projhor" style="margin:4px 0 4px"><span style="align-self:center;font-size:13px;color:var(--muted)">Até:</span><button id="ph-m" data-ph="m" class="on">Fim do mês</button><button id="ph-a" data-ph="a">Fim do ano</button><button id="ph-b" data-ph="b">Meio de 2027</button><button id="ph-c" data-ph="c">Fim de 2028</button></div>
 <div class="presets" id="projmodo" style="margin:4px 0 8px"><span style="align-self:center;font-size:13px;color:var(--muted)">Mostrar:</span><button data-pm="a">Pelo menos X</button><button data-pm="f" class="on">Entre X e Y</button></div>
 <div class="chart" id="c-proj"></div>
 <p class="note" id="proj-nota"></p>
@@ -194,7 +194,7 @@ function calcProj(){
   for(let i=0;i<N;i++){let c=0;for(let j=0;j<n-1;j++){const z=nrm();c+=z*z;}const sig=Math.sqrt((n-1)*s2/c);const mu=m+sig/Math.sqrt(n)*nrm();let f=0;for(let d=0;d<R;d++)f+=GASTO-(mu+sig*nrm());tot[i]=base+f;}
   const srt=Array.from(tot).sort((a,b)=>a-b);const q=(p)=>srt[Math.floor(p*(N-1))];
   const q95=q(.95);let step,lo0,hi0;
-  if(fixo){step=fixo;lo0=Math.max(0,Math.floor(q(.01)/KG/step)*step);hi0=Math.max(lo0+step,Math.ceil(q(.99)/KG/step)*step);}
+  if(fixo){const amp=(q(.99)-q(.01))/KG;step=[500,1000,2000,2500,5000,10000,20000].find((v)=>amp/v<=9)||50000;lo0=Math.max(0,Math.floor(q(.01)/KG/step)*step);hi0=Math.max(lo0+step,Math.ceil(q(.99)/KG/step)*step);}
   else{step=[100,200,250,500,1000,2000].find((v)=>q95/KG/10<=v)||5000;lo0=0;hi0=step*10;}
   const th=[];for(let t=Math.max(step,lo0);t<=hi0;t+=step){th.push([t,srt.filter((v)=>v>=t*KG).length/N]);}
   const bins=[[-Infinity,lo0+(fixo?0:step),0]];if(fixo&&lo0===0)bins.length=0;
@@ -202,23 +202,27 @@ function calcProj(){
   else{bins.length=0;bins.push([-Infinity,lo0,0]);for(let t=lo0;t<hi0;t+=step)bins.push([t,t+step,0]);bins.push([hi0,Infinity,0]);}
   bins.forEach((b)=>{b[2]=srt.filter((v)=>v>=b[0]*KG&&v<b[1]*KG).length/N;});
   return {R,base,th,bins,step,q05:q(.05),q50:q(.5),q95};};
- const M=simula(RM,baseM,0);const A=simula(RA,baseA,500);
+ const dias=(y,mo,d)=>Math.max(0,Math.round((Date.UTC(y,mo,d)-Date.UTC(ano,ul[1]-1,ul[0]))/864e5));
+ const M=simula(RM,baseM,0);const A=simula(RA,baseA,1);const B=simula(dias(2027,5,30),baseA,1);const C=simula(dias(2028,11,31),baseA,1);
  Object.assign(M,{n,m,sd:Math.sqrt(s2),ini:amostra[0].label,fim:amostra[n-1].label,nmes:doMes.length,iniMes:doMes.length?doMes[0].label:null,fimMes:String(fimMes).padStart(2,'0')+'/'+String(mes).padStart(2,'0'),mesNome:MESES[mes-1],ano:ano});
- Object.assign(A,{fimMes:'31/12',mesNome:String(ano),iniAno:closed[0].label,ndias:closed.length});
- M.A=A;return M;
+ const lg={iniAno:closed[0].label,ndias:closed.length};
+ Object.assign(A,lg,{fimMes:'31/12',tit:'o fim de '+ano,per:ano+' (11/11 a 31/12)',lbl:'Fim de '+ano});
+ Object.assign(B,lg,{fimMes:'30/06/2027',tit:'a metade de 2027',per:'2027 (11/11/'+ano+' a 30/06/2027)',lbl:'Meio de 2027'});
+ Object.assign(C,lg,{fimMes:'31/12/2028',tit:'o fim de 2028',per:'2028 (11/11/'+ano+' a 31/12/2028)',lbl:'Fim de 2028'});
+ M.H={a:A,b:B,c:C};return M;
 }
 let gfmt=(g)=>g>=1000?(g/1000).toFixed(g%1000?1:0).replace('.',',')+' kg':nf(g)+' g';
 const kgf=(g)=>(g/1000).toFixed(g%1000?1:0).replace('.',',');
-const rngLab=(lo,hi)=>hi>=1000?(lo>=1000?kgf(lo)+' a '+kgf(hi)+' kg':nf(lo)+' g a '+kgf(hi)+' kg'):nf(lo)+' a '+nf(hi)+' g';
+const rngLab=(lo,hi)=>hi>=1000?(lo===0?'0 a '+kgf(hi)+' kg':lo>=1000?kgf(lo)+' a '+kgf(hi)+' kg':nf(lo)+' g a '+kgf(hi)+' kg'):nf(lo)+' a '+nf(hi)+' g';
 function chartProj(){
  const el=$('c-proj'),nota=$('proj-nota');if(!PROJ)PROJ=calcProj();const P0=PROJ;
  if(!P0||(P0.R<=0&&projHor==='m')){el.replaceChildren();nota.textContent=P0?'O mês já terminou: não há dias restantes para projetar.':'Poucos dias fechados para projetar.';return;}
- const ya=projHor==='a';const P=ya?P0.A:P0;
- $('t-proj').textContent='Simulação de Monte Carlo: gordura perdida (déficit calórico) até o fim de '+(ya?P0.ano:P0.mesNome);
- $('ph-m').textContent='Fim de '+P0.mesNome;$('ph-a').textContent='Fim de '+P0.ano;
+ const ya=projHor!=='m';const P=ya?P0.H[projHor]:P0;
+ $('t-proj').textContent='Simulação de Monte Carlo: gordura perdida (déficit calórico) até '+(ya?P.tit:'o fim de '+P0.mesNome);
+ $('ph-m').textContent='Fim de '+P0.mesNome;['a','b','c'].forEach((k)=>{$('ph-'+k).textContent=P0.H[k].lbl;});
  const fx=projModo==='f';const L=fx?P.bins:P.th;const rh=26,top=30,m={l:fx?128:84,r:58,b:6},H=top+m.b+L.length*rh;const {svg,tip,W}=frame(el,H);
  svg.setAttribute('aria-label','Barras horizontais com a probabilidade da gordura perdida até o fim do período');
- S('text',{x:6,y:14,'font-size':11,'font-weight':600,fill:cv('--muted')},svg,fx?'chance de a gordura perdida em '+(ya?P0.ano+' (11/11 a ':P0.mesNome+' (até ')+P.fimMes+') ficar na faixa':'gordura perdida em '+(ya?P0.ano+' (11/11 a ':P0.mesNome+' (até ')+P.fimMes+') de pelo menos');
+ S('text',{x:6,y:14,'font-size':11,'font-weight':600,fill:cv('--muted')},svg,fx?'chance de a gordura perdida até '+P.fimMes+' ficar em cada faixa':'gordura perdida até '+P.fimMes+' de pelo menos');
  const bw=W-m.l-m.r;
  const pk=fx?Math.max(...L.map((x)=>x[2])):0;
  L.forEach((it,i)=>{const y=top+i*rh;const pr=fx?it[2]:it[1];
@@ -234,7 +238,7 @@ function chartProj(){
   hit.addEventListener('pointerleave',()=>{tip.style.display='none';});});
  const f=(v)=>nf(v);const fg=(v)=>nf(v/7.7)+' g';
  const acum=ya?'Soma o déficit já acumulado <b>no ano</b> ('+P.ndias+' dias fechados, '+P.iniAno+' em diante: <b>'+f(P.base)+' kcal = '+fg(P.base)+' de gordura</b>, com gasto de '+f(GASTO)+'/dia e 7.700 kcal = 1 kg)':'Soma o déficit já acumulado <b>no mês</b> ('+(P0.nmes?P0.nmes+(P0.nmes>1?' dias':' dia')+', '+P0.iniMes+' em diante':'nenhum dia fechado ainda')+': <b>'+f(P.base)+' kcal = '+fg(P.base)+' de gordura</b>, com gasto de '+f(GASTO)+'/dia e 7.700 kcal = 1 kg)';
- nota.innerHTML='<b>Método:</b> simulação de Monte Carlo (20.000 sorteios) para <b>'+(ya?'o fim de '+P0.ano:P0.mesNome)+'</b>'+(ya?'':', sempre o mês vigente: quando o mês vira, tudo é recalculado para o novo mês')+'. O consumo diário é estimado com os <b>'+P0.n+' últimos dias fechados</b> ('+P0.ini+' a '+P0.fim+'; no máximo 30): média de <b>'+f(P0.m)+' kcal/dia</b>, variação típica de ±'+f(P0.sd)+'. Para cada um dos <b>'+P.R+' dias restantes</b> até '+P.fimMes+' (incluindo o dia em andamento) sorteia o consumo de uma distribuição normal; como média e variação vêm de poucos dias, elas também são sorteadas (equivale a uma t de Student). '+acum+' ao simulado e conta em quantos sorteios ele atinge cada valor. Cenário central: <b>'+fg(P.q50)+'</b> de gordura (90% dos casos entre '+fg(P.q05)+' e '+fg(P.q95)+'; em kcal, '+f(P.q50)+', entre '+f(P.q05)+' e '+f(P.q95)+').'+(ya?' <b>Quanto mais longe o horizonte, mais larga a incerteza</b>: o modelo supõe que seu padrão atual continua e o gasto fica fixo, sem mudanças de rotina, viagens ou festas; por isso as faixas do fim do ano são de 500 g.':'')+' Os dois modos usam a mesma simulação: "pelo menos X" é a probabilidade acumulada; "entre X e Y" é a chance de terminar em cada faixa de gordura (a barra mais forte é a faixa mais provável, e o comprimento das barras é proporcional a ela; o valor exato é o percentual ao lado). Não muda com os filtros nem usa o dia em andamento.';
+ nota.innerHTML='<b>Método:</b> simulação de Monte Carlo (20.000 sorteios) para <b>'+(ya?P.tit:P0.mesNome)+'</b>'+(ya?'':', sempre o mês vigente: quando o mês vira, tudo é recalculado para o novo mês')+'. O consumo diário é estimado com os <b>'+P0.n+' últimos dias fechados</b> ('+P0.ini+' a '+P0.fim+'; no máximo 30): média de <b>'+f(P0.m)+' kcal/dia</b>, variação típica de ±'+f(P0.sd)+'. Para cada um dos <b>'+P.R+' dias restantes</b> até '+P.fimMes+' (incluindo o dia em andamento) sorteia o consumo de uma distribuição normal; como média e variação vêm de poucos dias, elas também são sorteadas (equivale a uma t de Student). '+acum+' ao simulado e conta em quantos sorteios ele atinge cada valor. Cenário central: <b>'+fg(P.q50)+'</b> de gordura (90% dos casos entre '+fg(P.q05)+' e '+fg(P.q95)+'; em kcal, '+f(P.q50)+', entre '+f(P.q05)+' e '+f(P.q95)+').'+(ya?' <b>Quanto mais longe o horizonte, mais larga a incerteza</b>: o modelo supõe que seu padrão atual continua e o gasto fica fixo, sem mudanças de rotina, viagens ou festas; por isso as faixas são mais largas (aqui, de '+gfmt(P.step)+').'+(projHor!=='a'?' <b>Horizonte muito longo:</b> a simulação mantém a média de consumo e o gasto de '+f(GASTO)+' kcal fixos, mas na vida real o corpo se adapta (o gasto cai conforme o peso cai) e a rotina muda; trate como referência de tendência, não como previsão, e desconfie de valores acima de alguns kg.':''):'')+' Os dois modos usam a mesma simulação: "pelo menos X" é a probabilidade acumulada; "entre X e Y" é a chance de terminar em cada faixa de gordura (a barra mais forte é a faixa mais provável, e o comprimento das barras é proporcional a ela; o valor exato é o percentual ao lado). Não muda com os filtros nem usa o dia em andamento.';
 }
 document.querySelectorAll('#projmodo button').forEach((b)=>b.addEventListener('click',()=>{projModo=b.dataset.pm;document.querySelectorAll('#projmodo button').forEach((x)=>x.classList.toggle('on',x===b));chartProj();}));
 document.querySelectorAll('#projhor button').forEach((b)=>b.addEventListener('click',()=>{projHor=b.dataset.ph;document.querySelectorAll('#projhor button').forEach((x)=>x.classList.toggle('on',x===b));chartProj();}));
