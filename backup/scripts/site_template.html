@@ -100,6 +100,7 @@ const GASTO=2800;
 const LAB=['05–07h','08–10h','11–13h','14–16h','17–19h','20–22h','23–01h','02–04h'];
 const fxSel=new Set([0,1,2,3,4,5,6,7]);const fxAtivo=()=>fxSel.size<8;
 const kc=(r)=>{if(!fxAtivo()||!r.b)return r.kcal;let s=0;fxSel.forEach((i)=>{s+=r.b[i]||0;});return s;};
+const rm=(r)=>{if(!fxAtivo()||!r.kcal)return r;const s=kc(r)/r.kcal;return Object.assign({},r,{p:r.p*s,c:r.c*s,g:r.g*s,f:r.f*s});};
 const GG=()=>fxAtivo()?GASTO*fxSel.size/8:GASTO;
 const NS='http://www.w3.org/2000/svg';
 const $=(id)=>document.getElementById(id);
@@ -300,7 +301,7 @@ function chartAlim(rows){
   if(kk<=0)return;if(!ex){cc=(c||1)*kk/Math.max(k,1);aprox++;}
   agg[n]=(agg[n]||0)+kk;cn[n]=(cn[n]||0)+cc;}));
  Object.keys(cn).forEach((n)=>{cn[n]=Math.max(1,Math.round(cn[n]));});
- const fxn=$('fx-nota');if(fxn){fxn.style.display=fxAtivo()?'':'none';fxn.textContent=fxAtivo()?'Horário ('+fxSel.size*3+' h): saldo, kcal e alimentos só dessas faixas; gasto proporcional ('+nf(GG())+'). Macros, FF e simulação não mudam. Alimentos até 23/11: horário aproximado.':'';}
+ const fxn=$('fx-nota');if(fxn){fxn.style.display=fxAtivo()?'':'none';fxn.textContent=fxAtivo()?'Horário ('+fxSel.size*3+' h): saldo, kcal e alimentos só dessas faixas; gasto proporcional ('+nf(GG())+'). Macros e fibra: proporcionais às kcal da faixa (estimativa). FF e simulação não mudam. Alimentos até 23/11: horário aproximado.':'';}
  const norm=(s)=>s.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();const q='';
  const L=Object.entries(agg).filter(([n])=>!q||norm(n).includes(q)).sort((a,b)=>{for(const o of ordList){const d=CMP[o](a,b,cn);if(d)return d;}return b[1]-a[1];});
  const W0=Math.max(280,el.clientWidth);const rh=28,top=26,fw=46,cw=34,gw=42;const m={t:top,r:fw+cw+gw+6,b:8,l:Math.min(150,Math.round(W0*.37))};const H=m.t+m.b+L.length*rh;
@@ -367,8 +368,8 @@ const f=faixas(rows);if(fxAtivo())f.out.forEach((r)=>{if(!fxSel.has(r.idx)){r.me
  const dT=rows.reduce((a,r)=>a+(GG()-kc(r)),0);const gk=dT/7700;
  $('frase').textContent='No período de '+rows[0].label+' a '+rows[rows.length-1].label+' ('+rows.length+(rows.length===1?' dia':' dias')+'), o '+(dT>=0?'déficit':'superávit')+' calórico total foi de '+nf(Math.abs(dT))+' kcal (≈ '+(Math.abs(gk).toFixed(2).replace('.',','))+' kg de gordura '+(dT>=0?'perdida':'ganha')+').';
  $('gastolbl').textContent=nf(GG());$('incl').textContent=sg(f.slope);
- chartDias(s);chartKcal(rows);chartAcum(rows);chartProj();chartMacros(rows);chartFF(rows);chartAlim(rows);chartFaixas(f.out,rows.length);
- const sum=(k)=>rows.reduce((a,r)=>a+r[k],0);const def=rows.reduce((a,r)=>a+(GG()-kc(r)),0);const n=rows.length;
+ chartDias(s);chartKcal(rows);chartAcum(rows);chartProj();chartMacros(rows.map(rm));chartFF(rows);chartAlim(rows);chartFaixas(f.out,rows.length);
+ const sum=(k)=>rows.reduce((a,r)=>a+(k==='kcal'?r[k]:rm(r)[k]),0);const def=rows.reduce((a,r)=>a+(GG()-kc(r)),0);const n=rows.length;
  const ffm=(()=>{const o=rows.filter((r)=>r.ff!=null);return o.length?(o.reduce((a,r)=>a+r.ff,0)/o.length).toFixed(2).replace('.',','):'—';})();
  kpis('k1',[['Déficit acumulado (kcal)',nf(def)],['Déficit médio (kcal/dia)',nf(def/n)],['Gordura equivalente (g)',nf(def/7.7)],['Consumo médio (kcal/dia)',nf(rows.reduce((q,r)=>q+kc(r),0)/n)]]);
  kpis('k2',[['Proteína (g/dia)',nf(sum('p')/n)],['Carboidrato (g/dia)',nf(sum('c')/n)],['Gordura (g/dia)',nf(sum('g')/n)],['Fibra (g/dia)',nf(sum('f')/n)]]);
