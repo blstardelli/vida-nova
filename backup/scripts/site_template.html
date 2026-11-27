@@ -79,7 +79,9 @@ svg text{font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
 
 <h2 id="t-alim">O que consumi (kcal por alimento)</h2>
 <div class="presets" id="ordem" style="margin:4px 0 8px"><span style="align-self:center;font-size:13px;color:var(--muted)">Ordenar por:</span><button data-o="k" class="on">kcal</button><button data-o="f">FF</button><button data-o="r">Registros</button><button data-o="g">IG</button><button id="multi" data-m="1" style="margin-left:6px">Combinar</button><span id="ffavg" style="align-self:center;font-size:13px;color:var(--muted);margin-left:6px"></span></div>
+<div class="presets" id="fxbar" style="margin:0 0 8px"><span style="align-self:center;font-size:13px;color:var(--muted)">Faixas de horário:</span></div>
 <div class="chart" id="c-alim"></div>
+<p class="note" id="fx-nota"></p>
 <p class="note">Soma das kcal de cada alimento nos dias do filtro, na ordem escolhida (kcal, FF ou registros) · Reg. = quantas vezes o alimento foi lançado (aproximado nos dias 11 a 20/11) · kcal no fim de cada barra · FF do alimento (coluna da direita): verde = igual ou acima do FF médio do período, vermelho = abaixo; cor mais forte = mais longe da média · "—" = líquido ou gordura, sem FF · inclui sucos, açaí, água de coco e azeite · valores estimados.</p>
 
 <h2>Mediana do consumo de kcal por faixa de 3 horas</h2>
@@ -96,6 +98,7 @@ svg text{font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
 const ALL=/*DATA*/[];let DATA=ALL.slice();let incAberto=true;
 const GASTO=2800;
 const LAB=['05–07h','08–10h','11–13h','14–16h','17–19h','20–22h','23–01h','02–04h'];
+const fxSel=new Set([0,1,2,3,4,5,6,7]);const fxAtivo=()=>fxSel.size<8;
 const NS='http://www.w3.org/2000/svg';
 const $=(id)=>document.getElementById(id);
 const nf=(v)=>Math.round(v).toLocaleString('pt-BR');
@@ -242,6 +245,10 @@ function chartProj(){
 }
 document.querySelectorAll('#projmodo button').forEach((b)=>b.addEventListener('click',()=>{projModo=b.dataset.pm;document.querySelectorAll('#projmodo button').forEach((x)=>x.classList.toggle('on',x===b));chartProj();}));
 document.querySelectorAll('#projhor button').forEach((b)=>b.addEventListener('click',()=>{projHor=b.dataset.ph;document.querySelectorAll('#projhor button').forEach((x)=>x.classList.toggle('on',x===b));chartProj();}));
+function fxUI(){const bar=$('fxbar');bar.querySelectorAll('button').forEach((b)=>b.remove());
+ LAB.forEach((l,i)=>{const b=document.createElement('button');b.textContent=l;b.dataset.fx=i;b.classList.toggle('on',fxSel.has(i));b.addEventListener('click',()=>{if(fxSel.has(i)){if(fxSel.size>1)fxSel.delete(i);}else fxSel.add(i);fxUI();render();});bar.appendChild(b);});
+ const t=document.createElement('button');t.textContent='Todas';t.classList.toggle('on',!fxAtivo());t.addEventListener('click',()=>{for(let i=0;i<8;i++)fxSel.add(i);fxUI();render();});bar.appendChild(t);}
+fxUI();
 function chartMacros(rows){
  const el=$('c-macros');const W0=Math.max(280,el.clientWidth),H=Math.round(Math.max(270,Math.min(390,W0*.56)));
  const m={t:40,r:36,b:30,l:44};const {svg,tip,W}=frame(el,H);
@@ -284,7 +291,14 @@ const IGA={"Patinho moído":0,"Bife":0,"Contrafilé":0,"Tilápia":0,"Ovos":0,"Pr
 let ordList=['k'],multi=false;
 const CMP={k:(a,b,cn)=>b[1]-a[1],f:(a,b,cn)=>(FFA[b[0]]??-1)-(FFA[a[0]]??-1),r:(a,b,cn)=>cn[b[0]]-cn[a[0]],g:(a,b,cn)=>(IGA[a[0]]??999)-(IGA[b[0]]??999)};
 function chartAlim(rows){
- const el=$('c-alim');const agg={},cn={};rows.forEach((r)=>(r.a||[]).forEach(([n,k,c])=>{agg[n]=(agg[n]||0)+k;cn[n]=(cn[n]||0)+(c||1);}));
+ const el=$('c-alim');const agg={},cn={};let aprox=0,ultEx=null;
+ rows.forEach((r)=>(r.a||[]).forEach(([n,k,c,bk,ex,cb])=>{
+  if(!fxAtivo()){agg[n]=(agg[n]||0)+k;cn[n]=(cn[n]||0)+(c||1);return;}
+  if(!bk)return;let kk=0,cc=0;fxSel.forEach((i)=>{kk+=bk[i]||0;if(cb)cc+=cb[i]||0;});
+  if(kk<=0)return;if(!ex){cc=(c||1)*kk/Math.max(k,1);aprox++;}
+  agg[n]=(agg[n]||0)+kk;cn[n]=(cn[n]||0)+cc;}));
+ Object.keys(cn).forEach((n)=>{cn[n]=Math.max(1,Math.round(cn[n]));});
+ const fxn=$('fx-nota');if(fxn)fxn.textContent=fxAtivo()?'Filtro ativo ('+[...fxSel].sort((a,b)=>a-b).map((i)=>LAB[i]).join(', ')+'): mostra só as kcal e os registros dessas faixas. Nos dias até 23/11 o horário de cada alimento é aproximado (a kcal do dia nas faixas é exata, mas a divisão entre alimentos é proporcional); a partir de 24/11 é exato. O FF, a média de FF e a coluna IG não mudam com o filtro.':'';
  const norm=(s)=>s.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();const q='';
  const L=Object.entries(agg).filter(([n])=>!q||norm(n).includes(q)).sort((a,b)=>{for(const o of ordList){const d=CMP[o](a,b,cn);if(d)return d;}return b[1]-a[1];});
  const W0=Math.max(280,el.clientWidth);const rh=28,top=26,fw=46,cw=34,gw=42;const m={t:top,r:fw+cw+gw+6,b:8,l:Math.min(150,Math.round(W0*.37))};const H=m.t+m.b+L.length*rh;
@@ -324,7 +338,7 @@ function chartFaixas(out,ND){
  svg.setAttribute('aria-label','Linha com a mediana de calorias em cada faixa de 3 horas');
  const pts=out.filter((r)=>r.mediana!=null);const mx=Math.max(100,...pts.map((r)=>r.mediana))*1.15;const T=ticks(mx);const y=scaleLin(0,T.max,H-m.b,m.t);grid(svg,m,W,H,y,T.t);
  const step=(W-m.l-m.r)/out.length;const X=(i)=>m.l+i*step+step/2;
- out.forEach((r,i)=>S('text',{x:X(i),y:H-10,'text-anchor':'middle','font-size':step>=60?11:9.5,fill:cv('--muted')},svg,step>=60?r.faixa:r.faixa.replace('h','')));
+ out.forEach((r,i)=>S('text',{x:X(i),y:H-10,'text-anchor':'middle','font-size':step>=60?11:9.5,fill:cv('--muted'),opacity:r.off?.3:1},svg,step>=60?r.faixa:r.faixa.replace('h','')));
  if(pts.length>1)S('path',{d:pts.map((r,i)=>(i?'L':'M')+X(r.idx)+' '+y(r.mediana)).join(''),fill:'none',stroke:cv('--blue'),'stroke-width':2.4},svg);
  const tr=pts.filter((r)=>r.tend!=null);
  if(tr.length>1){const a=tr[0],b=tr[tr.length-1];S('line',{x1:X(a.idx),y1:y(a.tend),x2:X(b.idx),y2:y(b.tend),stroke:cv('--orange'),'stroke-width':2,'stroke-dasharray':'6 4'},svg);}
@@ -347,7 +361,7 @@ function render(){
  $('fimlbl').textContent=DATA[s.fim].label;$('janlbl').textContent=rows.length+(rows.length===1?' dia':' dias');
  $('de').value=s.ini;$('ate').value=s.fim;
  document.querySelectorAll('#presets button[data-p]').forEach((b)=>b.classList.toggle('on',Number(b.dataset.p)===st.p));
- const f=faixas(rows);const pico=f.out.filter((r)=>r.mediana!=null).reduce((a,r)=>(a==null||r.mediana>a.mediana?r:a),null);
+const f=faixas(rows);if(fxAtivo())f.out.forEach((r)=>{if(!fxSel.has(r.idx)){r.mediana=null;r.n=0;r.tend=null;r.off=true;}});const pico=f.out.filter((r)=>r.mediana!=null).reduce((a,r)=>(a==null||r.mediana>a.mediana?r:a),null);
  const dT=rows.reduce((a,r)=>a+(GASTO-r.kcal),0);const gk=dT/7700;
  $('frase').textContent='No período de '+rows[0].label+' a '+rows[rows.length-1].label+' ('+rows.length+(rows.length===1?' dia':' dias')+'), o '+(dT>=0?'déficit':'superávit')+' calórico total foi de '+nf(Math.abs(dT))+' kcal (≈ '+(Math.abs(gk).toFixed(2).replace('.',','))+' kg de gordura '+(dT>=0?'perdida':'ganha')+').';
  $('gastolbl').textContent=nf(GASTO);$('incl').textContent=sg(f.slope);

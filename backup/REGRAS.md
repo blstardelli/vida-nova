@@ -33,6 +33,7 @@ Patinho moído: 219 kcal/100 g nos registros, 171 kcal/100 g (P29, G6) para o FF
 - Projeção (seção "Simulação de Monte Carlo: déficit calórico"): sempre do mês vigente (data do navegador); déficit acumulado só dos dias do mês; consumo estimado com os últimos 30 dias fechados; degraus de 100 g de gordura (7.700 kcal = 1 kg; ajustam sozinhos se q95 passar de 1 kg).
 - Simulação tem 2 modos (botões "Pelo menos X" e "Entre X e Y"; padrão = Entre X e Y).
 - Simulação tem 4 horizontes (fim do mês: faixas de 100 g; fim do ano, meio de 2027 e fim de 2028: faixas largas automáticas; acumulado desde o 1º dia de dados). Horizontes longos têm aviso de que o gasto e o consumo são supostos fixos.
+- Filtro de faixas de horário (chips sob "O que consumi"): vale para o gráfico de alimentos e a mediana por faixa; usa out/alimentos_hora.json (horário exato por alimento desde 24/11; antes, aproximado proporcionalmente). publish_open_day.py grava as entradas do dia (h,n,k) nesse arquivo.
 - Dia aberto: `DIA_ABERTO=<dd/mm>` marca a última linha como `aberto` (botão "Hoje: sim/não" e aviso de parcial).
 - Gráfico "O que consumi": ordenação por kcal, FF, Registros e IG (botão Combinar = ordenação múltipla), colunas Reg., FF e IG.
 - Cartões: Balanço energético; Macronutrientes e fibra; Saciedade e horário.
