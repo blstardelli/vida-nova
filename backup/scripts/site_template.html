@@ -34,6 +34,7 @@ input[type=range]{display:block;width:100%;margin:6px 0 0}
 svg text{font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
 .filtros{position:sticky;top:8px;z-index:30;padding:10px 12px;box-shadow:0 6px 16px rgba(0,0,0,.12)}
 .filtros .presets{display:flex;flex-wrap:nowrap;gap:6px;margin:0}
+.filtros #fxbar button{white-space:nowrap;padding:5px 2px;font-size:12.5px}
 .filtros .presets button{white-space:nowrap;padding:5px 10px;font-size:12.5px}
 .filtros .sl{display:grid;grid-template-columns:1fr 1fr;gap:14px}
 .filtros label{margin-top:8px;font-size:13px}
@@ -52,7 +53,7 @@ svg text{font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
 <div class="sl"><label>Dia final: <b id="fimlbl">—</b><input type="range" id="fim"></label>
 <label>Janela: <b id="janlbl">—</b><input type="range" id="jan"></label></div>
 <div class="sl dts"><label>De: <select id="de"></select></label><label>Até: <select id="ate"></select></label></div>
-<div class="presets" id="fxbar" style="margin:8px 0 0;overflow-x:auto"><span style="align-self:center;font-size:13px;color:var(--muted);white-space:nowrap">Horário:</span></div>
+<div id="fxbar" aria-label="Filtro de horário" style="margin:8px 0 0;display:grid;grid-template-columns:repeat(5,1fr);gap:6px"></div>
 <p class="note" id="fx-nota" style="margin:6px 0 0"></p>
 </section>
 
