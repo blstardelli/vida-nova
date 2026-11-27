@@ -249,7 +249,12 @@ function chartProj(){
 document.querySelectorAll('#projmodo button').forEach((b)=>b.addEventListener('click',()=>{projModo=b.dataset.pm;document.querySelectorAll('#projmodo button').forEach((x)=>x.classList.toggle('on',x===b));chartProj();}));
 document.querySelectorAll('#projhor button').forEach((b)=>b.addEventListener('click',()=>{projHor=b.dataset.ph;document.querySelectorAll('#projhor button').forEach((x)=>x.classList.toggle('on',x===b));chartProj();}));
 function fxUI(){const bar=$('fxbar');bar.querySelectorAll('button').forEach((b)=>b.remove());
- LAB.forEach((l,i)=>{const b=document.createElement('button');b.textContent=l;b.dataset.fx=i;b.classList.toggle('on',fxSel.has(i));b.addEventListener('click',()=>{if(fxSel.has(i)){if(fxSel.size>1)fxSel.delete(i);}else fxSel.add(i);fxUI();render();});bar.appendChild(b);});
+ LAB.forEach((l,i)=>{const b=document.createElement('button');b.textContent=l;b.dataset.fx=i;b.classList.toggle('on',fxAtivo()&&fxSel.has(i));b.addEventListener('click',()=>{
+  if(!fxAtivo()){fxSel.clear();fxSel.add(i);}
+  else if(fxSel.has(i)){fxSel.delete(i);if(fxSel.size===0)for(let k=0;k<8;k++)fxSel.add(k);}
+  else fxSel.add(i);
+  if(fxSel.size===8)fxSel.clear(),[0,1,2,3,4,5,6,7].forEach((k)=>fxSel.add(k));
+  fxUI();render();});bar.appendChild(b);});
  const t=document.createElement('button');t.textContent='Todas';t.classList.toggle('on',!fxAtivo());t.addEventListener('click',()=>{for(let i=0;i<8;i++)fxSel.add(i);fxUI();render();});bar.appendChild(t);}
 fxUI();
 function chartMacros(rows){
