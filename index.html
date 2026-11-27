@@ -53,8 +53,7 @@ svg text{font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
 <div class="sl"><label>Dia final: <b id="fimlbl">—</b><input type="range" id="fim"></label>
 <label>Janela: <b id="janlbl">—</b><input type="range" id="jan"></label></div>
 <div class="sl dts"><label>De: <select id="de"></select></label><label>Até: <select id="ate"></select></label></div>
-<div id="fxbar" aria-label="Filtro de horário" style="margin:8px 0 0;display:grid;grid-template-columns:repeat(5,1fr);gap:6px"></div>
-<p class="note" id="fx-nota" style="margin:6px 0 0"></p>
+
 </section>
 
 <h2>Dias dentro do filtro</h2>
@@ -257,7 +256,6 @@ function fxUI(){const bar=$('fxbar');bar.querySelectorAll('button').forEach((b)=
   if(fxSel.size===8)fxSel.clear(),[0,1,2,3,4,5,6,7].forEach((k)=>fxSel.add(k));
   fxUI();render();});bar.appendChild(b);});
  const t=document.createElement('button');t.textContent='Todas';t.classList.toggle('on',!fxAtivo());t.addEventListener('click',()=>{for(let i=0;i<8;i++)fxSel.add(i);fxUI();render();});bar.appendChild(t);}
-fxUI();
 function chartMacros(rows){
  const el=$('c-macros');const W0=Math.max(280,el.clientWidth),H=Math.round(Math.max(270,Math.min(390,W0*.56)));
  const m={t:40,r:36,b:30,l:44};const {svg,tip,W}=frame(el,H);
