@@ -52,6 +52,8 @@ svg text{font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
 <div class="sl"><label>Dia final: <b id="fimlbl">—</b><input type="range" id="fim"></label>
 <label>Janela: <b id="janlbl">—</b><input type="range" id="jan"></label></div>
 <div class="sl dts"><label>De: <select id="de"></select></label><label>Até: <select id="ate"></select></label></div>
+<div class="presets" id="fxbar" style="margin:8px 0 0;overflow-x:auto"><span style="align-self:center;font-size:13px;color:var(--muted);white-space:nowrap">Horário:</span></div>
+<p class="note" id="fx-nota" style="margin:6px 0 0"></p>
 </section>
 
 <h2>Dias dentro do filtro</h2>
@@ -79,9 +81,7 @@ svg text{font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
 
 <h2 id="t-alim">O que consumi (kcal por alimento)</h2>
 <div class="presets" id="ordem" style="margin:4px 0 8px"><span style="align-self:center;font-size:13px;color:var(--muted)">Ordenar por:</span><button data-o="k" class="on">kcal</button><button data-o="f">FF</button><button data-o="r">Registros</button><button data-o="g">IG</button><button id="multi" data-m="1" style="margin-left:6px">Combinar</button><span id="ffavg" style="align-self:center;font-size:13px;color:var(--muted);margin-left:6px"></span></div>
-<div class="presets" id="fxbar" style="margin:0 0 8px"><span style="align-self:center;font-size:13px;color:var(--muted)">Faixas de horário:</span></div>
 <div class="chart" id="c-alim"></div>
-<p class="note" id="fx-nota"></p>
 <p class="note">Soma das kcal de cada alimento nos dias do filtro, na ordem escolhida (kcal, FF ou registros) · Reg. = quantas vezes o alimento foi lançado (aproximado nos dias 11 a 20/11) · kcal no fim de cada barra · FF do alimento (coluna da direita): verde = igual ou acima do FF médio do período, vermelho = abaixo; cor mais forte = mais longe da média · "—" = líquido ou gordura, sem FF · inclui sucos, açaí, água de coco e azeite · valores estimados.</p>
 
 <h2>Mediana do consumo de kcal por faixa de 3 horas</h2>
@@ -99,6 +99,8 @@ const ALL=/*DATA*/[];let DATA=ALL.slice();let incAberto=true;
 const GASTO=2800;
 const LAB=['05–07h','08–10h','11–13h','14–16h','17–19h','20–22h','23–01h','02–04h'];
 const fxSel=new Set([0,1,2,3,4,5,6,7]);const fxAtivo=()=>fxSel.size<8;
+const kc=(r)=>{if(!fxAtivo()||!r.b)return r.kcal;let s=0;fxSel.forEach((i)=>{s+=r.b[i]||0;});return s;};
+const GG=()=>fxAtivo()?GASTO*fxSel.size/8:GASTO;
 const NS='http://www.w3.org/2000/svg';
 const $=(id)=>document.getElementById(id);
 const nf=(v)=>Math.round(v).toLocaleString('pt-BR');
@@ -119,13 +121,13 @@ function median(v){v=v.slice().sort((a,b)=>a-b);const n=v.length;return n?(n%2?v
 function chartDias(s){
  const el=$('c-dias');const H=146,m={t:46,r:4,b:20,l:4};const {svg,tip,W}=frame(el,H);
  svg.setAttribute('aria-label','Calorias totais por dia; barras coloridas estão no filtro');
- const N=DATA.length,step=(W-m.l-m.r)/N,bw=step*0.75;const mx=Math.max(...DATA.map((r)=>r.kcal));
+ const N=DATA.length,step=(W-m.l-m.r)/N,bw=step*0.75;const mx=Math.max(...DATA.map((r)=>kc(r)));
  const y=scaleLin(0,mx,H-m.b,m.t);const every=step>=34?1:2;
  DATA.forEach((r,i)=>{const inn=i>=s.ini&&i<=s.fim;const x=m.l+i*step+(step-bw)/2;
-  const rc=S('rect',{x,y:y(r.kcal),width:bw,height:H-m.b-y(r.kcal),rx:3,fill:inn?cv('--blue'):cv('--mutedbar'),opacity:inn?1:.55},svg);
-  {const cx=x+bw/2,ty=y(r.kcal)-4;const lb=S('text',{x:cx,y:ty,'text-anchor':'middle','font-size':11,'font-weight':inn?700:500,fill:inn?cv('--fg'):cv('--muted'),'pointer-events':'none'},svg,nf(r.kcal));
+  const rc=S('rect',{x,y:y(kc(r)),width:bw,height:H-m.b-y(kc(r)),rx:3,fill:inn?cv('--blue'):cv('--mutedbar'),opacity:inn?1:.55},svg);
+  {const cx=x+bw/2,ty=y(kc(r))-4;const lb=S('text',{x:cx,y:ty,'text-anchor':'middle','font-size':11,'font-weight':inn?700:500,fill:inn?cv('--fg'):cv('--muted'),'pointer-events':'none'},svg,nf(kc(r)));
    if(step<44){lb.setAttribute('transform','rotate(-90 '+cx+' '+ty+')');lb.setAttribute('text-anchor','start');lb.setAttribute('x',cx+4);}}
-  rc.addEventListener('pointermove',(ev)=>{const b=el.getBoundingClientRect();showTip(el,tip,r.label+'\n'+nf(r.kcal)+' kcal'+(inn?'':' (fora do filtro)'),ev.clientX-b.left,ev.clientY-b.top);});
+  rc.addEventListener('pointermove',(ev)=>{const b=el.getBoundingClientRect();showTip(el,tip,r.label+'\n'+nf(kc(r))+' kcal'+(inn?'':' (fora do filtro)'),ev.clientX-b.left,ev.clientY-b.top);});
   rc.addEventListener('pointerleave',()=>{tip.style.display='none';});
   if(i%every===0)S('text',{x:x+bw/2,y:H-6,'text-anchor':'middle','font-size':11,fill:cv('--muted')},svg,r.label);});
 }
@@ -133,7 +135,7 @@ function chartKcal(rows){
  const el=$('c-kcal');const W0=Math.max(280,el.clientWidth),H=Math.round(Math.max(270,Math.min(390,W0*.56)));
  const m={t:34,r:14,b:30,l:52};const {svg,tip,W}=frame(el,H);
  svg.setAttribute('aria-label','Barras com o saldo calórico de cada dia em relação ao gasto: verde se déficit, vermelho se superávit');
- const sal=rows.map((r)=>r.kcal-GASTO);
+ const sal=rows.map((r)=>kc(r)-GG());
  const lo0=Math.min(0,...sal),hi0=Math.max(0,...sal);const span=Math.max(300,hi0-lo0);
  const step0=niceMax(span/4);const lo=Math.floor((lo0-span*.14)/step0)*step0,hi=Math.ceil((hi0+span*.14)/step0)*step0;
  const y=scaleLin(lo,hi,H-m.b,m.t);
@@ -145,10 +147,10 @@ function chartKcal(rows){
   const lab=S('text',{x:cx,y:over?y1-6:y1+14,'text-anchor':'middle','font-size':11,'font-weight':700,fill:over?cv('--red'):cv('--green'),stroke:cv('--bg'),'stroke-width':4,'paint-order':'stroke','pointer-events':'none'},svg,sg(s));
   if(st<44){const ly=over?y1-6:y1+6;lab.setAttribute('transform','rotate(-90 '+cx+' '+ly+')');lab.setAttribute('x',cx+4);lab.setAttribute('y',ly);lab.setAttribute('text-anchor',over?'start':'end');}
   const hit=S('rect',{x:m.l+i*st,y:m.t-6,width:st,height:H-m.t-m.b+6,fill:'transparent'},svg);
-  hit.addEventListener('pointermove',(ev)=>{const b=el.getBoundingClientRect();showTip(el,tip,r.label+'\n'+nf(r.kcal)+' kcal consumidas\n'+(over?'superávit ':'déficit ')+nf(Math.abs(s))+' kcal',ev.clientX-b.left,ev.clientY-b.top);});
+  hit.addEventListener('pointermove',(ev)=>{const b=el.getBoundingClientRect();showTip(el,tip,r.label+'\n'+nf(kc(r))+' kcal consumidas\n'+(over?'superávit ':'déficit ')+nf(Math.abs(s))+' kcal',ev.clientX-b.left,ev.clientY-b.top);});
   hit.addEventListener('pointerleave',()=>{tip.style.display='none';});});
  S('line',{x1:m.l,x2:W-m.r,y1:y(0),y2:y(0),stroke:cv('--fg'),'stroke-width':1.8,'stroke-dasharray':'6 4'},svg);
- S('line',{x1:m.l,x2:m.l+22,y1:14,y2:14,stroke:cv('--fg'),'stroke-width':1.8,'stroke-dasharray':'6 4'},svg);S('text',{x:m.l+28,y:18,'font-size':12,fill:cv('--fg')},svg,'0 = gasto calórico de '+nf(GASTO)+' kcal');
+ S('line',{x1:m.l,x2:m.l+22,y1:14,y2:14,stroke:cv('--fg'),'stroke-width':1.8,'stroke-dasharray':'6 4'},svg);S('text',{x:m.l+28,y:18,'font-size':12,fill:cv('--fg')},svg,'0 = gasto calórico de '+nf(GG())+' kcal');
  const every=st>=34?1:2;
  rows.forEach((r,i)=>{if(i%every===0)S('text',{x:m.l+i*st+st/2,y:H-10,'text-anchor':'middle','font-size':11,fill:cv('--muted')},svg,r.label);});
 }
@@ -156,7 +158,7 @@ function chartAcum(rows){
  const el=$('c-acum');const W0=Math.max(280,el.clientWidth),H=Math.round(Math.max(210,Math.min(300,W0*.42)));
  const m={t:30,r:14,b:30,l:52};const {svg,tip,W}=frame(el,H);
  svg.setAttribute('aria-label','Linha com a média acumulada do saldo calórico, dia a dia');
- const sal=rows.map((r)=>r.kcal-GASTO);let cs=0;const cum=sal.map((s,i)=>{cs+=s;return {tot:cs,avg:cs/(i+1)};});
+ const sal=rows.map((r)=>kc(r)-GG());let cs=0;const cum=sal.map((s,i)=>{cs+=s;return {tot:cs,avg:cs/(i+1)};});
  const lo0=Math.min(0,...sal),hi0=Math.max(0,...sal);const span=Math.max(300,hi0-lo0);
  const step0=niceMax(span/4);const lo=Math.floor((lo0-span*.14)/step0)*step0,hi=Math.ceil((hi0+span*.14)/step0)*step0;
  const y=scaleLin(lo,hi,H-m.b,m.t);
@@ -298,7 +300,7 @@ function chartAlim(rows){
   if(kk<=0)return;if(!ex){cc=(c||1)*kk/Math.max(k,1);aprox++;}
   agg[n]=(agg[n]||0)+kk;cn[n]=(cn[n]||0)+cc;}));
  Object.keys(cn).forEach((n)=>{cn[n]=Math.max(1,Math.round(cn[n]));});
- const fxn=$('fx-nota');if(fxn)fxn.textContent=fxAtivo()?'Filtro ativo ('+[...fxSel].sort((a,b)=>a-b).map((i)=>LAB[i]).join(', ')+'): mostra só as kcal e os registros dessas faixas. Nos dias até 23/11 o horário de cada alimento é aproximado (a kcal do dia nas faixas é exata, mas a divisão entre alimentos é proporcional); a partir de 24/11 é exato. O FF, a média de FF e a coluna IG não mudam com o filtro.':'';
+ const fxn=$('fx-nota');if(fxn){fxn.style.display=fxAtivo()?'':'none';fxn.textContent=fxAtivo()?'Horário ('+fxSel.size*3+' h): saldo, kcal e alimentos só dessas faixas; gasto proporcional ('+nf(GG())+'). Macros, FF e simulação não mudam. Alimentos até 23/11: horário aproximado.':'';}
  const norm=(s)=>s.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();const q='';
  const L=Object.entries(agg).filter(([n])=>!q||norm(n).includes(q)).sort((a,b)=>{for(const o of ordList){const d=CMP[o](a,b,cn);if(d)return d;}return b[1]-a[1];});
  const W0=Math.max(280,el.clientWidth);const rh=28,top=26,fw=46,cw=34,gw=42;const m={t:top,r:fw+cw+gw+6,b:8,l:Math.min(150,Math.round(W0*.37))};const H=m.t+m.b+L.length*rh;
@@ -362,13 +364,13 @@ function render(){
  $('de').value=s.ini;$('ate').value=s.fim;
  document.querySelectorAll('#presets button[data-p]').forEach((b)=>b.classList.toggle('on',Number(b.dataset.p)===st.p));
 const f=faixas(rows);if(fxAtivo())f.out.forEach((r)=>{if(!fxSel.has(r.idx)){r.mediana=null;r.n=0;r.tend=null;r.off=true;}});const pico=f.out.filter((r)=>r.mediana!=null).reduce((a,r)=>(a==null||r.mediana>a.mediana?r:a),null);
- const dT=rows.reduce((a,r)=>a+(GASTO-r.kcal),0);const gk=dT/7700;
+ const dT=rows.reduce((a,r)=>a+(GG()-kc(r)),0);const gk=dT/7700;
  $('frase').textContent='No período de '+rows[0].label+' a '+rows[rows.length-1].label+' ('+rows.length+(rows.length===1?' dia':' dias')+'), o '+(dT>=0?'déficit':'superávit')+' calórico total foi de '+nf(Math.abs(dT))+' kcal (≈ '+(Math.abs(gk).toFixed(2).replace('.',','))+' kg de gordura '+(dT>=0?'perdida':'ganha')+').';
- $('gastolbl').textContent=nf(GASTO);$('incl').textContent=sg(f.slope);
+ $('gastolbl').textContent=nf(GG());$('incl').textContent=sg(f.slope);
  chartDias(s);chartKcal(rows);chartAcum(rows);chartProj();chartMacros(rows);chartFF(rows);chartAlim(rows);chartFaixas(f.out,rows.length);
- const sum=(k)=>rows.reduce((a,r)=>a+r[k],0);const def=rows.reduce((a,r)=>a+(GASTO-r.kcal),0);const n=rows.length;
+ const sum=(k)=>rows.reduce((a,r)=>a+r[k],0);const def=rows.reduce((a,r)=>a+(GG()-kc(r)),0);const n=rows.length;
  const ffm=(()=>{const o=rows.filter((r)=>r.ff!=null);return o.length?(o.reduce((a,r)=>a+r.ff,0)/o.length).toFixed(2).replace('.',','):'—';})();
- kpis('k1',[['Déficit acumulado (kcal)',nf(def)],['Déficit médio (kcal/dia)',nf(def/n)],['Gordura equivalente (g)',nf(def/7.7)],['Consumo médio (kcal/dia)',nf(sum('kcal')/n)]]);
+ kpis('k1',[['Déficit acumulado (kcal)',nf(def)],['Déficit médio (kcal/dia)',nf(def/n)],['Gordura equivalente (g)',nf(def/7.7)],['Consumo médio (kcal/dia)',nf(rows.reduce((q,r)=>q+kc(r),0)/n)]]);
  kpis('k2',[['Proteína (g/dia)',nf(sum('p')/n)],['Carboidrato (g/dia)',nf(sum('c')/n)],['Gordura (g/dia)',nf(sum('g')/n)],['Fibra (g/dia)',nf(sum('f')/n)]]);
  kpis('k3',[['FF médio do dia',ffm],['Faixa de pico',pico?pico.faixa:'—'],['Mediana no pico (kcal)',pico?nf(pico.mediana):'—']]);
 }
