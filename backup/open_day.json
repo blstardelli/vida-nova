@@ -1,19 +1,6 @@
 {
  "dia": "2026-11-28",
  "label": "28/11",
- "ff": 1.57,
- "entries": [
-  {
-   "h": 28,
-   "n": "Biscoito Tostines Especiarias",
-   "k": 276,
-   "p": 5.0,
-   "c": 40.4,
-   "g": 10.4,
-   "f": 1.2
-  }
- ],
- "janela_fim": "19:07",
- "ritmo_kcal_h": 133.33,
- "inicio": "04:07"
+ "ff": null,
+ "entries": []
 }
