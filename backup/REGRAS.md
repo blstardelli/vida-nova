@@ -10,7 +10,7 @@ Usuário: Bruno (português, app mobile do Claude, fuso America/Sao_Paulo). Regi
 ## Ritmo
 - Meta 2.450 kcal. Janela de 15 h a partir do primeiro registro do dia; esperado = 450 kcal no primeiro registro + 133,33 kcal/h.
 - Se a janela for encurtada (ex.: 25/11 termina às 03:00), o ritmo é redistribuído: (2450 − 450) / horas da janela (25/11: 11h26 → 175 kcal/h).
-- O dia só fecha quando o usuário disser. Registros após a meia-noite pertencem ao dia aberto. Um "Bom dia" no dia seguinte foi tratado como aviso de fechamento.
+- O dia só fecha quando o usuário disser. Registros após a meia-noite pertencem ao dia aberto. Um "Bom dia" no dia seguinte fecha o dia anterior automaticamente, sem pedir confirmação (instrução do usuário em 28/11): fechar, mostrar o resumo do dia e já abrir o novo dia.
 - Gasto 2.800 kcal/dia nos gráficos de saldo; 7.700 kcal ≈ 1 kg de gordura.
 
 ## FF (Fullness Factor)
@@ -41,4 +41,4 @@ Patinho moído: 219 kcal/100 g nos registros, 171 kcal/100 g (P29, G6) para o FF
 - Ao fechar um dia: gravar o dia definitivo em refeicoes/diario/ff_prato/alimentos_dia (com contagem de registros por alimento).
 
 ## Estado
-Dados fechados: 11/11 a 26/11. Dia aberto: ver `open_day.json` (27/11, sem registros ainda). Para fechar um dia: `python3 publish_open_day.py --fechar` e depois `./push_repo.sh`, e zerar `open_day.json` para o próximo dia.
+Dados fechados: 11/11 a 27/11. Dia aberto: ver `open_day.json` (28/11, sem registros ainda). Para fechar um dia: `python3 publish_open_day.py --fechar` e depois `./push_repo.sh`, e zerar `open_day.json` para o próximo dia.
